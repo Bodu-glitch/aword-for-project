@@ -1,3 +1,4 @@
+import SignOutButton from "@/components/sign-out-button";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -38,7 +39,7 @@ const Profile = () => {
             </Pressable>
             <Text className="text-xl font-semibold text-black ml-4">Profile</Text>
           </View>
-          <Pressable onPress={logout}>
+          <Pressable>
             <Ionicons name="ellipsis-vertical" size={24} color="black" />
           </Pressable>
         </View>
@@ -103,6 +104,8 @@ const Profile = () => {
           </View>
         </View>
       </View>
+
+      <SignOutButton />
     </SafeAreaView>
   );
 };

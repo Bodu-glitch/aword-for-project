@@ -10,6 +10,12 @@ const RoutesLayout = () => {
       }}
     >
       <Tabs.Screen
+        name="home"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           headerShown: false,
@@ -17,12 +23,6 @@ const RoutesLayout = () => {
       />
       <Tabs.Screen
         name="setting"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="home"
         options={{
           headerShown: false,
         }}

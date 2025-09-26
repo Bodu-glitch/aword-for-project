@@ -1,3 +1,4 @@
+import { useAppSelector } from "@/lib/hooks";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import LottieView from "lottie-react-native";
@@ -8,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const Home = () => {
     const flameAnimation = useRef<LottieView>(null);
     const gradientAnimation = useRef(new Animated.Value(0)).current;
+    const user = useAppSelector((state) => state.auth.auth);
 
     useEffect(() => {
         flameAnimation.current?.play();
@@ -37,11 +39,20 @@ const Home = () => {
             {/* Header */}
             <View className="flex-row justify-between items-center">
                 <Pressable onPress={() => router.push("/profile")} className="flex-row items-center">
-                    <Image
-                        source={{uri: "https://i.pravatar.cc/100"}}
-                        className="w-14 h-14 rounded-full mr-3"
-                    />
-                    <Text className="text-xl font-semibold">hhaoz</Text>
+                    {user?.avatar_url ? (
+            <>
+              <Image
+                source={{ uri: user.avatar_url }}
+                className="w-10 h-10 rounded-full mr-2"
+              />
+              <Text className="text-base font-semibold">{user.name}</Text>
+            </>
+          ) : (
+            <Image
+              source={{ uri: "https://i.pravatar.cc/100" }}
+              className="w-10 h-10 rounded-full mr-2"
+            />
+          )}
                 </Pressable>
 
                 <View className="flex-row">

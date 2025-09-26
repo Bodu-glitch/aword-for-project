@@ -5,6 +5,8 @@ import { View } from "react-native";
 import { Provider } from "react-redux";
 import { makeStore, AppStore } from "@/lib/store";
 import React from "react";
+import AuthProvider from "@/providers/auth-provider";
+import { SplashScreenController } from "@/components/splash-screen-controller";
 
 const themes = {
   blue: {
@@ -47,9 +49,12 @@ export default function RootLayout() {
   return (
     <StoreProvider>
       <Theme>
-        <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        </Stack>
+        <AuthProvider>
+          <SplashScreenController />
+          <Stack>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          </Stack>
+        </AuthProvider>
       </Theme>
     </StoreProvider>
   );

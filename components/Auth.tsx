@@ -6,6 +6,7 @@ import { expo } from "@/app.json";
 import { Text } from "@react-navigation/elements";
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
+import { router } from "expo-router";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -31,7 +32,7 @@ export default function GoogleSignInButton() {
     const res = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${expo.scheme}://google-auth`,
+        redirectTo: `${expo.scheme}://home`,
         queryParams: { prompt: "consent" },
         skipBrowserRedirect: true,
       },
@@ -46,7 +47,7 @@ export default function GoogleSignInButton() {
 
     const result = await WebBrowser.openAuthSessionAsync(
       googleOAuthUrl,
-      `${expo.scheme}://google-auth`,
+      `${expo.scheme}://home`,
       { showInRecents: true },
     ).catch((err) => {
       console.error("onSignInButtonPress - openAuthSessionAsync - error", {
@@ -76,6 +77,8 @@ export default function GoogleSignInButton() {
           data,
           error,
         });
+
+        router.replace("/home");
         return;
       } else {
         console.error("onSignInButtonPress - setSession - failed");

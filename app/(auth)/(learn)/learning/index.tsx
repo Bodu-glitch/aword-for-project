@@ -95,7 +95,7 @@ const Index = () => {
             { icon: "flame-outline", color: "#DC2626", text: "10 in a row" },
             { icon: "flash-outline", color: "#F59E0B", text: "40 exp" },
           ]}
-          onContinue={() => router.push("/home")}
+          onContinue={() => router.replace("/home")}
         />
       </FlowPager>
     </View>
