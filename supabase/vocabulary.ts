@@ -201,3 +201,23 @@ export const fetchRandomVocabularyBatch = async (
     return [];
   }
 };
+
+export const fetchAllVocabulary = async (): Promise<Vocabulary[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("vocabulary")
+      .select("*")
+      .order("prefix", { ascending: true })
+      .order("word", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching all vocabulary:", error);
+      return [];
+    }
+
+    return data as Vocabulary[];
+  } catch (error) {
+    console.error("Error fetching all vocabulary:", error);
+    return [];
+  }
+};
