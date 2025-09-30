@@ -96,65 +96,8 @@ const Setting = () => {
           </View>
         </SettingCard>
 
-        {/* Language Section */}
-        <SettingCard className="mb-4">
-          <Pressable
-            onPress={() => setIsLanguageExpanded(!isLanguageExpanded)}
-            className="p-4"
-          >
-            <View className="flex-row items-center justify-between">
-              <Text
-                className="text-lg font-medium"
-                style={{ color: colors.text.primary }}
-              >
-                Language
-              </Text>
-              <Ionicons
-                name={isLanguageExpanded ? "chevron-up" : "chevron-down"}
-                size={20}
-                color={colors.text.secondary}
-              />
-            </View>
-          </Pressable>
-
-          {isLanguageExpanded && (
-            <View
-              className="px-4 pb-4"
-              style={{
-                borderTopColor: colors.border.primary,
-                borderTopWidth: 1,
-              }}
-            >
-              <View className="flex-row items-center justify-between py-3">
-                <Text
-                  className="text-base"
-                  style={{ color: colors.text.secondary }}
-                >
-                  Vietnamese
-                </Text>
-                <RadioButton
-                  selected={selectedLanguage === "Vietnamese"}
-                  onPress={() => setSelectedLanguage("Vietnamese")}
-                />
-              </View>
-              <View className="flex-row items-center justify-between py-3">
-                <Text
-                  className="text-base"
-                  style={{ color: colors.text.secondary }}
-                >
-                  English
-                </Text>
-                <RadioButton
-                  selected={selectedLanguage === "English"}
-                  onPress={() => setSelectedLanguage("English")}
-                />
-              </View>
-            </View>
-          )}
-        </SettingCard>
-
         {/* Font Size Section */}
-        <SettingCard className="mb-4">
+        {/* <SettingCard className="mb-4">
           <Pressable
             onPress={() => setIsFontSizeExpanded(!isFontSizeExpanded)}
             className="p-4"
@@ -220,10 +163,10 @@ const Setting = () => {
               </View>
             </View>
           )}
-        </SettingCard>
+        </SettingCard> */}
 
         {/* Notifications Section */}
-        <SettingCard className="mb-4">
+        {/* <SettingCard className="mb-4">
           <Pressable className="flex-row items-center justify-between p-4">
             <Text
               className="text-lg font-medium"
@@ -237,7 +180,7 @@ const Setting = () => {
               color={colors.text.secondary}
             />
           </Pressable>
-        </SettingCard>
+        </SettingCard> */}
       </View>
     </SafeAreaView>
   );

@@ -6,6 +6,7 @@ import { useColorScheme } from "nativewind";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Pressable,
   Text,
@@ -175,6 +176,43 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
   const shuffleVocabulary = () => {
     if (history.length === 0) return;
 
+    console.log(
+      "Shuffle clicked - knownCount:",
+      knownCount,
+      "dontKnowCount:",
+      dontKnowCount
+    );
+
+    // Check if user has made any choices
+    if (knownCount > 0 || dontKnowCount > 0) {
+      console.log("Showing shuffle dialog");
+      Alert.alert(
+        "Shuffle Cards",
+        "Shuffling will reset all your Know/Don't Know choices. Are you sure you want to continue?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => console.log("Shuffle cancelled"),
+          },
+          {
+            text: "Shuffle",
+            style: "destructive",
+            onPress: () => {
+              console.log("Shuffle confirmed");
+              handleShuffleConfirm();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    console.log("Performing shuffle directly");
+    performShuffle();
+  };
+
+  const performShuffle = () => {
     if (isShuffled) {
       // If already shuffled, restore original order
       setHistory(originalHistory);
@@ -193,6 +231,16 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
       setIsFlipped(false);
       setIsShuffled(true);
     }
+  };
+
+  const handleShuffleConfirm = () => {
+    // Reset all progress when shuffling
+    setKnownCount(0);
+    setDontKnowCount(0);
+    setKnownIds(new Set());
+    setDontKnowIds(new Set());
+    setSortingComplete(false);
+    performShuffle();
   };
 
   const toggleStar = () => {
