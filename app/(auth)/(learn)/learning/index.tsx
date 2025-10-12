@@ -3,12 +3,20 @@ import NewWord from "@/components/NewWord";
 import NewWordDetail from "@/components/NewWordDetail";
 import QuizFourOptions from "@/components/QuizFourOptions";
 import QuizResult from "@/components/QuizResult";
+import { useGetQuestionsQuery } from "@/lib/features/learn/learnApi";
 import { getColors } from "@/utls/colors";
 import { router } from "expo-router";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useGetQuestionsQuery } from "@/lib/features/learn/learnApi";
+
+// Định nghĩa kiểu dữ liệu cho kết quả từng câu
+type QuestionResult = {
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+};
 
 const Index = () => {
   const { colorScheme } = useColorScheme();
@@ -17,6 +25,8 @@ const Index = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [selected, setSelected] = React.useState<(number | null)[]>([]);
   const [checked, setChecked] = React.useState<boolean[]>([]);
+  // State để lưu kết quả từng câu trả lời
+  const [questionResults, setQuestionResults] = React.useState<QuestionResult[]>([]);
   const { data: questionsData, isLoading: isGettingQuestions } =
     useGetQuestionsQuery(undefined, {
       refetchOnMountOrArgChange: true,
@@ -29,7 +39,7 @@ const Index = () => {
     }
   }, [questionsData]);
 
-  if (isGettingQuestions) {
+  if (isGettingQuestions || !questionsData) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -64,7 +74,7 @@ const Index = () => {
     : 0;
 
   // Helper to get word parts for NewWordDetail
-  const getWordParts = (word) => [
+  const getWordParts = (word: any) => [
     { text: word.prefix },
     { text: "·" },
     { text: word.infix },
@@ -73,7 +83,7 @@ const Index = () => {
   ];
 
   // Helper to get anatomy for NewWordDetail
-  const getAnatomy = (word) => [
+  const getAnatomy = (word: any) => [
     {
       badgeLabel: "Prefix",
       part: word.prefix,
@@ -143,11 +153,26 @@ const Index = () => {
               const newChecked = [...checked];
               newChecked[currentQuestionIndex] = true;
               setChecked(newChecked);
+              
+              // Lưu kết quả câu hỏi hiện tại
+              const userAnswerIndex = selected[currentQuestionIndex];
+              const userAnswer = userAnswerIndex !== null ? options[userAnswerIndex] : "";
+              const isCorrect = userAnswer === question.correct_answer;
+              
+              const newResult: QuestionResult = {
+                question: question.question,
+                userAnswer: userAnswer,
+                correctAnswer: question.correct_answer,
+                isCorrect: isCorrect,
+              };
+              
+              setQuestionResults([...questionResults, newResult]);
             } else {
               // Move to next question or show results
               if (currentQuestionIndex < questionsData.questions.length - 1) {
                 setCurrentQuestionIndex(currentQuestionIndex + 1);
               } else {
+                console.log(questionResults);
                 setStep(totalWordSteps + 1); // Show results after all words and quiz
               }
             }
