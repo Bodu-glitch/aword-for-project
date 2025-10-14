@@ -4,19 +4,15 @@ import NewWordDetail from "@/components/NewWordDetail";
 import QuizFourOptions from "@/components/QuizFourOptions";
 import QuizResult from "@/components/QuizResult";
 import { useGetQuestionsQuery } from "@/lib/features/learn/learnApi";
+import {
+  useUpdateVocabsProgressMutation,
+  type QuestionResult,
+} from "@/lib/features/vocab/vocabApi";
 import { getColors } from "@/utls/colors";
 import { router } from "expo-router";
 import { useColorScheme } from "nativewind";
 import React from "react";
-import { ActivityIndicator, View } from "react-native";
-
-// Định nghĩa kiểu dữ liệu cho kết quả từng câu
-type QuestionResult = {
-  question: string;
-  userAnswer: string;
-  correctAnswer: string;
-  isCorrect: boolean;
-};
+import { ActivityIndicator, Text, View } from "react-native";
 
 const Index = () => {
   const { colorScheme } = useColorScheme();
@@ -25,8 +21,16 @@ const Index = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [selected, setSelected] = React.useState<(number | null)[]>([]);
   const [checked, setChecked] = React.useState<boolean[]>([]);
-  // State để lưu kết quả từng câu trả lời
-  const [questionResults, setQuestionResults] = React.useState<QuestionResult[]>([]);
+  // State để lưu kết quả từng câu trả lời (kèm thời gian)
+  const [questionResults, setQuestionResults] = React.useState<
+    QuestionResult[]
+  >([]);
+  // Track start time of current question
+  const [questionStartMs, setQuestionStartMs] = React.useState<number>(
+    Date.now(),
+  );
+  const [updateProgress] = useUpdateVocabsProgressMutation();
+
   const { data: questionsData, isLoading: isGettingQuestions } =
     useGetQuestionsQuery(undefined, {
       refetchOnMountOrArgChange: true,
@@ -36,10 +40,18 @@ const Index = () => {
     if (questionsData?.questions) {
       setSelected(Array(questionsData.questions.length).fill(null));
       setChecked(Array(questionsData.questions.length).fill(false));
+      setCurrentQuestionIndex(0);
+      setQuestionResults([]);
+      setQuestionStartMs(Date.now());
     }
   }, [questionsData]);
 
-  if (isGettingQuestions ) {
+  // Reset timer when moving to a new question
+  React.useEffect(() => {
+    setQuestionStartMs(Date.now());
+  }, [currentQuestionIndex]);
+
+  if (isGettingQuestions) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -56,7 +68,7 @@ const Index = () => {
         className="flex-1 justify-center items-center"
         style={{ backgroundColor: colors.background.primary }}
       >
-        <Text style={{ color: colors.text.primary }}>
+        <Text className="text-lg" style={{ color: colors.text.primary }}>
           Failed to load questions. Please try again later.
         </Text>
       </View>
@@ -157,36 +169,55 @@ const Index = () => {
               const newChecked = [...checked];
               newChecked[currentQuestionIndex] = false;
               setChecked(newChecked);
+              // restart timer if user changed selection after checking
+              setQuestionStartMs(Date.now());
             }
           }}
           correctIndex={correctIndex}
           checked={checked[currentQuestionIndex]}
-          onCheck={() => {
+          onCheck={async () => {
             if (!checked[currentQuestionIndex]) {
               const newChecked = [...checked];
               newChecked[currentQuestionIndex] = true;
               setChecked(newChecked);
 
-              // Lưu kết quả câu hỏi hiện tại
+              // Lưu kết quả câu hỏi hiện tại với thời gian trả lời
               const userAnswerIndex = selected[currentQuestionIndex];
-              const userAnswer = userAnswerIndex !== null ? options[userAnswerIndex] : "";
+              const userAnswer =
+                userAnswerIndex !== null ? options[userAnswerIndex] : "";
               const isCorrect = userAnswer === question.correct_answer;
+              const vocabId =
+                questionsData.allWords.find(
+                  (w: any) => w.word === question.word,
+                )?.id || "";
+              const durationSec = Math.max(
+                0,
+                (Date.now() - questionStartMs) / 1000,
+              );
 
               const newResult: QuestionResult = {
                 question: question.question,
-                userAnswer: userAnswer,
+                userAnswer,
                 correctAnswer: question.correct_answer,
-                isCorrect: isCorrect,
+                isCorrect,
+                vocabId,
+                durationSec,
               };
 
-              setQuestionResults([...questionResults, newResult]);
+              setQuestionResults((prev) => [...prev, newResult]);
             } else {
               // Move to next question or show results
               if (currentQuestionIndex < questionsData.questions.length - 1) {
                 setCurrentQuestionIndex(currentQuestionIndex + 1);
               } else {
-                console.log(questionResults);
-                setStep(totalWordSteps + 1); // Show results after all words and quiz
+                // Submit progress to Supabase then show results
+                try {
+                  console.log("Submitting question results:", questionResults);
+                  await updateProgress({ questionResults }).unwrap();
+                } catch (e) {
+                  // swallow error for now; could show a toast
+                }
+                setStep(totalWordSteps + 1);
               }
             }
           }}

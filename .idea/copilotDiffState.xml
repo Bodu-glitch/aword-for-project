@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/models/Vocabulary.ts">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/models/Vocabulary.ts" />
+              <option name="originalContent" value="export interface Vocabulary {&#10;    id: string;&#10;    prefix: string;&#10;    infix: string;&#10;    postfix: string;&#10;    prefix_meaning: string;&#10;    infix_meaning: string;&#10;    postfix_meaning: string;&#10;    phonetic: string;&#10;    vocab_examples: Vocab_Example[];&#10;    vocab_senses: Vocab_Sense[];&#10;    word: string;&#10;    definition_vi: string;&#10;    created_at: string;&#10;    // Optional fields used by UI components&#10;    ipa?: string;&#10;    pos?: string;&#10;    example_en?: string;&#10;    example_vi?: string;&#10;}&#10;&#10;interface Vocab_Sense {&#10;    id: string;&#10;    vocab_id: string;&#10;    word: string;&#10;    pos: string;&#10;    definition: string;&#10;    sense_order: number;&#10;    created_at: string;&#10;}&#10;&#10;interface Vocab_Example {&#10;    id: string;&#10;    vocab_id: string;&#10;    example_en: string;&#10;    example_vi: string;&#10;    example_order: number;&#10;    created_at: string;&#10;}&#10;" />
+              <option name="updatedContent" value="export interface Vocabulary {&#10;    id: string;&#10;    prefix: string;&#10;    infix: string;&#10;    postfix: string;&#10;    prefix_meaning: string;&#10;    infix_meaning: string;&#10;    postfix_meaning: string;&#10;    phonetic: string;&#10;    vocab_examples: Vocab_Example[];&#10;    vocab_senses: Vocab_Sense[];&#10;    word: string;&#10;    definition_vi: string;&#10;    created_at: string;&#10;    // Optional fields used by UI components&#10;    ipa?: string;&#10;    pos?: string;&#10;    example_en?: string;&#10;    example_vi?: string;&#10;}&#10;&#10;interface Vocab_Sense {&#10;    id: string;&#10;    vocab_id: string;&#10;    word: string;&#10;    pos: string;&#10;    definition: string;&#10;    sense_order: number;&#10;    created_at: string;&#10;}&#10;&#10;interface Vocab_Example {&#10;    id: string;&#10;    vocab_id: string;&#10;    example_en: string;&#10;    example_vi: string;&#10;    example_order: number;&#10;    created_at: string;&#10;}" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

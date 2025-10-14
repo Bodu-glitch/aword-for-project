@@ -25,7 +25,7 @@ export const learnApi = createApi({
   reducerPath: "learnApi",
   baseQuery: supabaseBaseQuery,
   endpoints: (builder) => ({
-    getQuestions: builder.query<Lesson>({
+    getQuestions: builder.query<Lesson, void>({
       query: () => ({
         url: "/get_questions",
         method: "POST",
