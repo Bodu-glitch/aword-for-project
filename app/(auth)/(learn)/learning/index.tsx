@@ -29,7 +29,8 @@ const Index = () => {
   const [questionStartMs, setQuestionStartMs] = React.useState<number>(
     Date.now(),
   );
-  const [updateProgress] = useUpdateVocabsProgressMutation();
+  const [updateProgress, { isLoading: isUpdatingProgress }] =
+    useUpdateVocabsProgressMutation();
 
   const { data: questionsData, isLoading: isGettingQuestions } =
     useGetQuestionsQuery(undefined, {
@@ -51,7 +52,7 @@ const Index = () => {
     setQuestionStartMs(Date.now());
   }, [currentQuestionIndex]);
 
-  if (isGettingQuestions) {
+  if (isGettingQuestions || isUpdatingProgress) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -207,7 +208,10 @@ const Index = () => {
                 // Submit progress to Supabase then show results
                 try {
                   console.log("Submitting question results:", questionResults);
-                  await updateProgress({ questionResults }).unwrap();
+                  await updateProgress({
+                    questionResults,
+                    learnedVocabIds: questionsData.newWords.map((w) => w.id),
+                  }).unwrap();
                 } catch (e) {
                   // swallow error for now; could show a toast
                 }
