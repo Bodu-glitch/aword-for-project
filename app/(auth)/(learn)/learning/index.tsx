@@ -186,6 +186,8 @@ const Index = () => {
               const userAnswer =
                 userAnswerIndex !== null ? options[userAnswerIndex] : "";
               const isCorrect = userAnswer === question.correct_answer;
+              const durationMs = Math.max(0, Date.now() - questionStartMs);
+              const durationSec = Math.max(1, Math.round(durationMs / 1000));
 
               const newResult: QuestionResult = {
                 question: question.question,
