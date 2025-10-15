@@ -93,13 +93,13 @@ export const vocabApi = createApi({
 
     // Update profile_vocab_progress based on a learning session results
     updateVocabsProgress: builder.mutation<
-      { updated: number },
-      { questionResults: QuestionResult[] }
+      { updated: number; subRootsLinked: number },
+      { questionResults: QuestionResult[]; learnedVocabIds?: string[] }
     >({
-      async queryFn({ questionResults }) {
+      async queryFn({ questionResults, learnedVocabIds }) {
         try {
           if (!questionResults || questionResults.length === 0) {
-            return { data: { updated: 0 } };
+            return { data: { updated: 0, subRootsLinked: 0 } };
           }
 
           // 1) Get current user for profile_id
@@ -120,7 +120,10 @@ export const vocabApi = createApi({
             string,
             { attempts: number; correct: number; times: number[] }
           >();
+          console.log("Question results:", questionResults);
           for (const r of questionResults) {
+            console.log("Processing result", r);
+
             if (!r.vocabId) continue;
             const bucket = byVocab.get(r.vocabId) || {
               attempts: 0,
@@ -136,6 +139,8 @@ export const vocabApi = createApi({
 
           const nowIso = new Date().toISOString();
           let updated = 0;
+
+          console.log("Updating progress for profile", byVocab);
 
           // 3) For each vocab, fetch existing progress then upsert with new proficiency
           for (const [vocabId, stats] of byVocab.entries()) {
@@ -165,6 +170,14 @@ export const vocabApi = createApi({
             const decayed = existing * 0.85; // slight decay encourages regular review
             const next = clamp01(round2(decayed + delta * 0.6));
 
+            console.log(
+              `Vocab ${vocabId} prof ${existing} -> decayed ${round2(
+                decayed,
+              )} + delta ${delta} = next ${next} (acc ${round2(accuracy)}, avgT ${round2(
+                avgTime,
+              )})`,
+            );
+
             // 3c) Upsert row; let first_learned_at default on insert
             const { error: upsertErr } = await supabase
               .from("profile_vocab_progress")
@@ -184,9 +197,52 @@ export const vocabApi = createApi({
             }
             updated += 1;
           }
-          console.log(`Updated progress for ${updated} vocabs`, byVocab);
 
-          return { data: { updated } };
+          // 4) NEW: link child roots progress for learned vocabs
+          const learnedIds =
+            learnedVocabIds && learnedVocabIds.length > 0
+              ? learnedVocabIds.filter(Boolean)
+              : Array.from(byVocab.keys());
+
+          console.log(learnedIds);
+
+          let subRootsLinked = 0;
+          if (learnedIds.length > 0) {
+            const { data: subRoots, error: subRootsErr } = await supabase
+              .from("vocab_sub_roots")
+              .select("id, vocab_id")
+              .in("vocab_id", learnedIds);
+
+            if (subRootsErr) {
+              return {
+                error: { message: subRootsErr.message, code: subRootsErr.code },
+              };
+            }
+
+            for (const sr of subRoots ?? []) {
+              const { error: upsertSubErr } = await supabase
+                .from("profile_sub_root_progress")
+                .upsert(
+                  {
+                    profile_id: profileId,
+                    sub_root_id: sr.id,
+                    is_learning: true,
+                  },
+                  { onConflict: "profile_id,sub_root_id" },
+                );
+              if (upsertSubErr) {
+                return {
+                  error: {
+                    message: upsertSubErr.message,
+                    code: upsertSubErr.code,
+                  },
+                };
+              }
+              subRootsLinked += 1;
+            }
+          }
+
+          return { data: { updated, subRootsLinked } };
         } catch (e: any) {
           return {
             error: { message: e?.message ?? "Unknown error", code: "UNKNOWN" },
