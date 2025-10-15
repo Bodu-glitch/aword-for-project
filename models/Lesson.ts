@@ -36,5 +36,5 @@ interface Question {
   answer_blocks: string[];
   correct_answer: string;
   type: "fill_in_blank" | "multiple_choice";
-  word: string;
+  vocab_id: string;
 }

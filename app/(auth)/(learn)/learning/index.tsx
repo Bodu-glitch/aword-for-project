@@ -186,21 +186,13 @@ const Index = () => {
               const userAnswer =
                 userAnswerIndex !== null ? options[userAnswerIndex] : "";
               const isCorrect = userAnswer === question.correct_answer;
-              const vocabId =
-                questionsData.allWords.find(
-                  (w: any) => w.word === question.word,
-                )?.id || "";
-              const durationSec = Math.max(
-                0,
-                (Date.now() - questionStartMs) / 1000,
-              );
 
               const newResult: QuestionResult = {
                 question: question.question,
                 userAnswer,
                 correctAnswer: question.correct_answer,
                 isCorrect,
-                vocabId,
+                vocabId: question.vocab_id,
                 durationSec,
               };
 
