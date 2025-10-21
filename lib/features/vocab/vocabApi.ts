@@ -1,7 +1,6 @@
-// filepath: /home/bo/repos/Aword/lib/features/vocab/vocabApi.ts
-import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { supabase } from "@/lib/supabase";
 import type { Vocabulary } from "@/models/Vocabulary";
+import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Lightweight error shape for queryFn
 type VocabError = { message: string; code?: string };
@@ -90,13 +89,20 @@ export const vocabApi = createApi({
       },
       keepUnusedDataFor: 0,
     }),
-
-    // Update profile_vocab_progress based on a learning session results
+    // Update progress for vocab (roots) and sub-vocab items based on session results
     updateVocabsProgress: builder.mutation<
       { updated: number; subRootsLinked: number },
-      { questionResults: QuestionResult[]; learnedVocabIds?: string[] }
+      {
+        questionResults: QuestionResult[];
+        // Minimal shape for items inside questionsData.allWords
+        allWords: Array<{
+          id: string;
+          root_id?: string | null;
+          sub_root_id?: string | null;
+        }>;
+      }
     >({
-      async queryFn({ questionResults, learnedVocabIds }) {
+      async queryFn({ questionResults, allWords }) {
         try {
           if (!questionResults || questionResults.length === 0) {
             return { data: { updated: 0, subRootsLinked: 0 } };
@@ -115,17 +121,14 @@ export const vocabApi = createApi({
           }
           const profileId = userData.user.id;
 
-          // 2) Aggregate results by vocabId (accuracy and avg time)
-          const byVocab = new Map<
+          // 2) Aggregate results by item id (maps to vocab_id or sub_vocab_id depending on type)
+          const statsById = new Map<
             string,
             { attempts: number; correct: number; times: number[] }
           >();
-          console.log("Question results:", questionResults);
           for (const r of questionResults) {
-            console.log("Processing result", r);
-
             if (!r.vocabId) continue;
-            const bucket = byVocab.get(r.vocabId) || {
+            const bucket = statsById.get(r.vocabId) || {
               attempts: 0,
               correct: 0,
               times: [],
@@ -134,16 +137,21 @@ export const vocabApi = createApi({
             bucket.correct += r.isCorrect ? 1 : 0;
             if (Number.isFinite(r.durationSec))
               bucket.times.push(Math.max(0, r.durationSec));
-            byVocab.set(r.vocabId, bucket);
+            statsById.set(r.vocabId, bucket);
           }
 
           const nowIso = new Date().toISOString();
           let updated = 0;
+          let subRootsLinked = 0;
 
-          console.log("Updating progress for profile", byVocab);
+          // 3) Walk through allWords; decide which table to update
+          for (const item of allWords ?? []) {
+            const { id, root_id, sub_root_id } = item as any;
 
-          // 3) For each vocab, fetch existing progress then upsert with new proficiency
-          for (const [vocabId, stats] of byVocab.entries()) {
+            // Find stats for this item (by id). If none, skip update.
+            const stats = statsById.get(id);
+            if (!stats) continue;
+
             const accuracy =
               stats.attempts > 0 ? stats.correct / stats.attempts : 0;
             const avgTime =
@@ -152,94 +160,101 @@ export const vocabApi = createApi({
                 : 10; // assume slow if missing
             const delta = computeSessionDelta(accuracy, avgTime);
 
-            // 3a) Get existing proficiency (if any)
-            const { data: existingRows, error: selectErr } = await supabase
-              .from("profile_vocab_progress")
-              .select("proficiency")
-              .eq("profile_id", profileId)
-              .eq("vocab_id", vocabId)
-              .limit(1);
-            if (selectErr) {
-              return {
-                error: { message: selectErr.message, code: selectErr.code },
-              };
-            }
-            const existing = existingRows?.[0]?.proficiency ?? 0;
+            if (sub_root_id) {
+              // Sub-vocab branch: update profile_sub_vocab_progress
+              const { data: existingRows, error: selectErr } = await supabase
+                .from("profile_sub_vocab_progress")
+                .select("proficiency")
+                .eq("profile_id", profileId)
+                .eq("sub_vocab_id", id)
+                .limit(1);
+              if (selectErr) {
+                return {
+                  error: { message: selectErr.message, code: selectErr.code },
+                };
+              }
+              const existing = existingRows?.[0]?.proficiency ?? 0;
+              const decayed = existing * 0.85;
+              const next = clamp01(round2(decayed + delta * 0.6));
 
-            // 3b) Combine with decay and cap to [0,1]
-            const decayed = existing * 0.85; // slight decay encourages regular review
-            const next = clamp01(round2(decayed + delta * 0.6));
+              const { error: upsertErr } = await supabase
+                .from("profile_sub_vocab_progress")
+                .upsert(
+                  {
+                    profile_id: profileId,
+                    sub_vocab_id: id,
+                    proficiency: next,
+                    last_seen_at: nowIso,
+                  },
+                  { onConflict: "profile_id,sub_vocab_id" },
+                );
+              if (upsertErr) {
+                return {
+                  error: { message: upsertErr.message, code: upsertErr.code },
+                };
+              }
+              updated += 1;
 
-            console.log(
-              `Vocab ${vocabId} prof ${existing} -> decayed ${round2(
-                decayed,
-              )} + delta ${delta} = next ${next} (acc ${round2(accuracy)}, avgT ${round2(
-                avgTime,
-              )})`,
-            );
-
-            // 3c) Upsert row; let first_learned_at default on insert
-            const { error: upsertErr } = await supabase
-              .from("profile_vocab_progress")
-              .upsert(
-                {
-                  profile_id: profileId,
-                  vocab_id: vocabId,
-                  proficiency: next,
-                  last_seen_at: nowIso,
-                },
-                { onConflict: "profile_id,vocab_id" },
-              );
-            if (upsertErr) {
-              return {
-                error: { message: upsertErr.message, code: upsertErr.code },
-              };
-            }
-            updated += 1;
-          }
-
-          // 4) NEW: link child roots progress for learned vocabs
-          const learnedIds =
-            learnedVocabIds && learnedVocabIds.length > 0
-              ? learnedVocabIds.filter(Boolean)
-              : Array.from(byVocab.keys());
-
-          console.log(learnedIds);
-
-          let subRootsLinked = 0;
-          if (learnedIds.length > 0) {
-            const { data: subRoots, error: subRootsErr } = await supabase
-              .from("vocab_sub_roots")
-              .select("id, vocab_id")
-              .in("vocab_id", learnedIds);
-
-            if (subRootsErr) {
-              return {
-                error: { message: subRootsErr.message, code: subRootsErr.code },
-              };
-            }
-
-            for (const sr of subRoots ?? []) {
-              const { error: upsertSubErr } = await supabase
+              // Ensure a row exists for the sub-root, set is_learning = false
+              const { error: upsertSubRootErr } = await supabase
                 .from("profile_sub_root_progress")
                 .upsert(
                   {
                     profile_id: profileId,
-                    sub_root_id: sr.id,
-                    is_learning: true,
+                    sub_root_id: sub_root_id,
+                    is_learning: false,
                   },
                   { onConflict: "profile_id,sub_root_id" },
                 );
-              if (upsertSubErr) {
+              if (upsertSubRootErr) {
                 return {
                   error: {
-                    message: upsertSubErr.message,
-                    code: upsertSubErr.code,
+                    message: upsertSubRootErr.message,
+                    code: upsertSubRootErr.code,
                   },
                 };
               }
               subRootsLinked += 1;
+              continue;
             }
+
+            if (root_id) {
+              // Root vocab branch: update profile_vocab_progress
+              const { data: existingRows, error: selectErr } = await supabase
+                .from("profile_vocab_progress")
+                .select("proficiency")
+                .eq("profile_id", profileId)
+                .eq("vocab_id", id)
+                .limit(1);
+              if (selectErr) {
+                return {
+                  error: { message: selectErr.message, code: selectErr.code },
+                };
+              }
+              const existing = existingRows?.[0]?.proficiency ?? 0;
+              const decayed = existing * 0.85;
+              const next = clamp01(round2(decayed + delta * 0.6));
+
+              const { error: upsertErr } = await supabase
+                .from("profile_vocab_progress")
+                .upsert(
+                  {
+                    profile_id: profileId,
+                    vocab_id: id,
+                    proficiency: next,
+                    last_seen_at: nowIso,
+                  },
+                  { onConflict: "profile_id,vocab_id" },
+                );
+              if (upsertErr) {
+                return {
+                  error: { message: upsertErr.message, code: upsertErr.code },
+                };
+              }
+              updated += 1;
+              continue;
+            }
+            // If neither root_id nor sub_root_id is present, ignore item
           }
 
           return { data: { updated, subRootsLinked } };

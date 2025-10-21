@@ -94,10 +94,16 @@ const Index = () => {
     correctIndex = options.findIndex((opt) => opt === question.correct_answer);
   }
 
-  // Calculate total steps: each word has 2 steps (NewWord + NewWordDetail), then quiz, then result
-  const totalWordSteps = questionsData?.newWords?.length
-    ? questionsData.newWords.length * 2
-    : 0;
+  // Calculate total units: each new word counts as 1 unit, each quiz question counts as 1 unit
+  const totalWords = questionsData?.newWords?.length ?? 0;
+  const totalQuestions = questionsData?.questions?.length ?? 0;
+  const totalUnits = totalWords + totalQuestions;
+
+  // Map a unit index to normalized progress (0..1)
+  const getUnitProgress = (unitIndex: number) =>
+    totalUnits > 0
+      ? Math.max(0, Math.min(1, (unitIndex + 1) / totalUnits))
+      : 0;
 
   // Helper to get word parts for NewWordDetail
   const getWordParts = (word: any) => [
@@ -138,12 +144,12 @@ const Index = () => {
           <NewWord
             key={`newword-${word.id}`}
             word={word.word}
-            progress={0.15 + idx * 0.15}
+            progress={getUnitProgress(idx)}
             onContinue={() => setStep(idx * 2 + 1)}
           />,
           <NewWordDetail
             key={`newworddetail-${word.id}`}
-            progress={0.3 + idx * 0.15}
+            progress={getUnitProgress(idx)}
             wordParts={getWordParts(word)}
             pos={word.vocab_senses[0]?.pos || ""}
             ipa={word.phonetic}
@@ -156,7 +162,7 @@ const Index = () => {
 
         {/* Quiz step: after all words */}
         <QuizFourOptions
-          progress={0.45}
+          progress={getUnitProgress(totalWords + currentQuestionIndex)}
           title={question.question}
           prompt={question.question}
           promptColorClass="text-red-600"
@@ -210,12 +216,12 @@ const Index = () => {
                   console.log("Submitting question results:", questionResults);
                   await updateProgress({
                     questionResults,
-                    learnedVocabIds: questionsData.newWords.map((w) => w.id),
+                    allWords: questionsData.allWords,
                   }).unwrap();
-                } catch (e) {
+                } catch {
                   // swallow error for now; could show a toast
                 }
-                setStep(totalWordSteps + 1);
+                setStep(totalWords * 2 + 1);
               }
             }
           }}
