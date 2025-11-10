@@ -13,7 +13,6 @@ export interface Vocabulary {
   definition_vi: string;
   created_at: string;
   // Optional fields used by UI components
-  ipa?: string;
   pos?: string;
   example_en?: string;
   example_vi?: string;

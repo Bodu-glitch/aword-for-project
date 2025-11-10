@@ -540,7 +540,7 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
                 className="text-base mb-3"
                 style={{ color: colors.text.secondary }}
               >
-                {currentWord.ipa}
+                {currentWord.phonetic}
               </Text>
 
               {/* Translation */}
