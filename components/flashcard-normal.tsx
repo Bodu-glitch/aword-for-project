@@ -18,6 +18,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getPartOfSpeechFull } from "@/utls/get_part_of_speechfull";
+import { useAudioPlayer } from "expo-audio";
+import { supabase } from "@/lib/supabase";
+import PlayAudioButton from "@/components/PlayAudioButton";
 
 const { width } = Dimensions.get("window");
 
@@ -333,400 +336,403 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
         </View>
       </View>
 
-      <View className="flex-1 justify-center items-center px-6">
-        {/* Touch overlay for flipping card */}
-        <Pressable
-          className="absolute inset-0 z-10"
-          onPress={flipCard}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 10,
-          }}
-        />
+      <Pressable onPress={flipCard} className={"flex-1"}>
+        <View className="flex-1 justify-center items-start px-6 ">
+          {/* Touch overlay for flipping card */}
+          {/*<Pressable*/}
+          {/*  className="absolute inset-0 z-10"*/}
+          {/*  onPress={flipCard}*/}
+          {/*  style={{*/}
+          {/*    position: "absolute",*/}
+          {/*    top: 0,*/}
+          {/*    left: 0,*/}
+          {/*    right: 0,*/}
+          {/*    bottom: 0,*/}
+          {/*    zIndex: 10,*/}
+          {/*  }}*/}
+          {/*/>*/}
 
-        <View className="relative w-full flex-1 max-h-[500px] min-h-[400px]">
-          <Animated.View
-            style={[
-              {
-                position: "absolute",
-                backfaceVisibility: "hidden",
-                width: "100%",
-              },
-              frontAnimatedStyle,
-            ]}
-          >
-            <View
-              className="rounded-2xl shadow-lg justify-center items-center self-center w-full h-full"
-              style={{
-                padding: 24,
-                backgroundColor: colors.background.secondary,
-                shadowColor: colors.text.primary,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                elevation: 4,
-                borderWidth: 1,
-                borderColor: colors.accent.blue,
-              }}
-            >
-              <Pressable
-                className="absolute top-4 right-4 z-20"
-                onPress={toggleStar}
-                style={{ zIndex: 20 }}
+          <Pressable onPress={flipCard}>
+            <View className="relative w-full flex-1 max-h-[500px] min-h-[400px]">
+              <Animated.View
+                style={[
+                  {
+                    position: "absolute",
+                    backfaceVisibility: "hidden",
+                    width: "100%",
+                  },
+                  frontAnimatedStyle,
+                ]}
               >
-                <Ionicons
-                  name={
-                    currentWord && starredIds.has(currentWord.id)
-                      ? "star"
-                      : "star-outline"
-                  }
-                  size={22}
-                  color={colors.accent.yellow}
-                />
-              </Pressable>
-
-              <View
-                className="flex-row items-center justify-center mb-4"
-                onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
-              >
-                <Text
-                  className="text-5xl font-bold"
-                  style={{ color: colors.text.primary }}
+                <View
+                  className="rounded-2xl shadow-lg justify-center items-center self-center w-full h-full"
+                  style={{
+                    padding: 24,
+                    backgroundColor: colors.background.secondary,
+                    shadowColor: colors.text.primary,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 4,
+                    elevation: 4,
+                    borderWidth: 1,
+                    borderColor: colors.accent.blue,
+                  }}
                 >
-                  {currentWord.word}
-                </Text>
-              </View>
-
-              <View className="h-1" style={{ width: headerWidth ?? undefined }}>
-                <View className="flex-row justify-between">
-                  {[...Array(8)].map((_, i) => (
-                    <View
-                      key={i}
-                      className="w-4 h-1 rounded-full"
-                      style={{ backgroundColor: colors.accent.yellow }}
+                  <Pressable
+                    className="absolute top-4 right-4 z-20"
+                    onPress={toggleStar}
+                    style={{ zIndex: 20 }}
+                  >
+                    <Ionicons
+                      name={
+                        currentWord && starredIds.has(currentWord.id)
+                          ? "star"
+                          : "star-outline"
+                      }
+                      size={22}
+                      color={colors.accent.yellow}
                     />
-                  ))}
+                  </Pressable>
+
+                  <View
+                    className="flex-row items-center justify-center mb-4"
+                    onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
+                  >
+                    <Text
+                      className="text-5xl font-bold"
+                      style={{ color: colors.text.primary }}
+                    >
+                      {currentWord.word}
+                    </Text>
+                  </View>
+
+                  <View
+                    className="h-1"
+                    style={{ width: headerWidth ?? undefined }}
+                  >
+                    <View className="flex-row justify-between">
+                      {[...Array(8)].map((_, i) => (
+                        <View
+                          key={i}
+                          className="w-4 h-1 rounded-full"
+                          style={{ backgroundColor: colors.accent.yellow }}
+                        />
+                      ))}
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
-          </Animated.View>
+              </Animated.View>
 
-          {/* Back Side */}
-          <Animated.View
-            style={[
-              {
-                position: "absolute",
-                backfaceVisibility: "hidden",
-                width: "100%",
-              },
-              backAnimatedStyle,
-            ]}
-          >
-            <View
-              className="rounded-2xl shadow-lg justify-center self-center w-full h-full"
-              style={{
-                padding: 24,
-                backgroundColor: colors.background.secondary,
-                shadowColor: colors.text.primary,
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.05,
-                shadowRadius: 4,
-                elevation: 4,
-                borderWidth: 1,
-                borderColor: colors.accent.blue,
-              }}
-            >
-              {/* Refresh Button */}
-              <Pressable
-                className="absolute top-4 right-4 z-20"
-                onPress={() => loadVocabularyBatch()}
-                style={{ zIndex: 20 }}
+              {/* Back Side */}
+              <Animated.View
+                style={[
+                  {
+                    position: "absolute",
+                    backfaceVisibility: "hidden",
+                    width: "100%",
+                  },
+                  backAnimatedStyle,
+                ]}
               >
-                <Ionicons
-                  name="refresh"
-                  size={20}
-                  color={colors.text.secondary}
-                />
-              </Pressable>
+                <View
+                  className="rounded-2xl shadow-lg justify-center self-center w-full h-full"
+                  style={{
+                    padding: 24,
+                    backgroundColor: colors.background.secondary,
+                    shadowColor: colors.text.primary,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 4,
+                    elevation: 4,
+                    borderWidth: 1,
+                    borderColor: colors.accent.blue,
+                  }}
+                >
+                  {/* Refresh Button */}
+                  <Pressable
+                    className="absolute top-4 right-4 z-20"
+                    onPress={() => loadVocabularyBatch()}
+                    style={{ zIndex: 20 }}
+                  >
+                    <Ionicons
+                      name="refresh"
+                      size={20}
+                      color={colors.text.secondary}
+                    />
+                  </Pressable>
 
-              {/* Word with Syllables and POS */}
-              <View className="flex-row items-center mb-2">
-                <View className="flex-row items-center">
-                  {currentWord?.prefix && (
-                    <>
+                  {/* Word with Syllables and POS */}
+                  <View className="flex-row items-center mb-2">
+                    <View className="flex-row items-center">
+                      {currentWord?.prefix && (
+                        <>
+                          <Text
+                            className="text-lg font-semibold"
+                            style={{ color: colors.accent.red }}
+                          >
+                            {currentWord.prefix}
+                          </Text>
+                          <Text
+                            className="text-sm mx-1"
+                            style={{ color: colors.text.secondary }}
+                          >
+                            •
+                          </Text>
+                        </>
+                      )}
                       <Text
                         className="text-lg font-semibold"
-                        style={{ color: colors.accent.red }}
+                        style={{ color: colors.text.primary }}
                       >
-                        {currentWord.prefix}
+                        {currentWord?.word
+                          ?.replace(currentWord?.prefix || "", "")
+                          .replace(currentWord?.postfix || "", "") || "word"}
                       </Text>
-                      <Text
-                        className="text-sm mx-1"
-                        style={{ color: colors.text.secondary }}
-                      >
-                        •
-                      </Text>
-                    </>
-                  )}
+                      {currentWord?.postfix && (
+                        <>
+                          <Text
+                            className="text-sm mx-1"
+                            style={{ color: colors.text.secondary }}
+                          >
+                            •
+                          </Text>
+                          <Text
+                            className="text-lg font-semibold"
+                            style={{ color: colors.accent.green }}
+                          >
+                            {currentWord.postfix}
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                    <Text
+                      className="text-sm ml-4 mr-2"
+                      style={{ color: colors.text.secondary }}
+                    >
+                      {getPartOfSpeechFull(currentWord.pos ?? "")}
+                    </Text>
+                    <PlayAudioButton
+                      audioPath={currentWord.audio_path || ""}
+                    ></PlayAudioButton>
+                  </View>
+
+                  {/* Pronunciation */}
                   <Text
-                    className="text-lg font-semibold"
+                    className="text-base mb-3"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    {currentWord.phonetic}
+                  </Text>
+
+                  {/* Translation */}
+                  <Text
+                    className="text-xl font-medium mb-3"
                     style={{ color: colors.text.primary }}
                   >
-                    {currentWord?.word
-                      ?.replace(currentWord?.prefix || "", "")
-                      .replace(currentWord?.postfix || "", "") || "word"}
+                    {currentWord.definition_vi}
                   </Text>
-                  {currentWord?.postfix && (
-                    <>
-                      <Text
-                        className="text-sm mx-1"
-                        style={{ color: colors.text.secondary }}
-                      >
-                        •
-                      </Text>
-                      <Text
-                        className="text-lg font-semibold"
-                        style={{ color: colors.accent.green }}
-                      >
-                        {currentWord.postfix}
-                      </Text>
-                    </>
+
+                  {/* Example */}
+                  <Text
+                    className="text-base mb-2"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    {highlightWordInExample(
+                      currentWord.example_en ?? "",
+                      currentWord.word,
+                      colors,
+                    )}
+                  </Text>
+
+                  {/* Example Vietnamese */}
+                  {currentWord.example_vi && (
+                    <Text
+                      className="text-base mb-6"
+                      style={{ color: colors.text.secondary }}
+                    >
+                      {currentWord.example_vi}
+                    </Text>
                   )}
+
+                  {/* Anatomy Section */}
+                  <View>
+                    <Text
+                      className="font-bold text-lg mb-3"
+                      style={{ color: colors.text.primary }}
+                    >
+                      Anatomy
+                    </Text>
+
+                    {/* Prefix */}
+                    {currentWord.prefix && (
+                      <View className="flex-row items-center mb-2">
+                        <View className="flex-row items-center w-40">
+                          <View
+                            className="rounded-l-full px-3 py-1 w-[60px]"
+                            style={{ backgroundColor: colors.accent.red }}
+                          >
+                            <Text className="text-white text-xs font-medium text-center">
+                              Prefix
+                            </Text>
+                          </View>
+                          <Text
+                            className="ml-3 text-base font-semibold"
+                            style={{ color: colors.text.primary }}
+                          >
+                            {currentWord.prefix}-
+                          </Text>
+                        </View>
+                        <Text
+                          className="flex-1 ml-8 text-base text-left"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          {currentWord.prefix_meaning}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Infix */}
+                    {currentWord.infix && (
+                      <View className="flex-row items-center mb-2">
+                        <View className="flex-row items-center w-40">
+                          <View
+                            className="rounded-l-full px-3 py-1 w-[60px]"
+                            style={{ backgroundColor: colors.accent.purple }}
+                          >
+                            <Text className="text-white text-xs font-medium text-center">
+                              Infix
+                            </Text>
+                          </View>
+                          <Text
+                            className="ml-3 text-base font-semibold"
+                            style={{ color: colors.text.primary }}
+                          >
+                            -{currentWord.infix}-
+                          </Text>
+                        </View>
+                        <Text
+                          className="flex-1 ml-8 text-base text-left"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          {currentWord.infix_meaning}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Postfix */}
+                    {currentWord.postfix && (
+                      <View className="flex-row items-center">
+                        <View className="flex-row items-center w-40">
+                          <View
+                            className="rounded-l-full px-3 py-1 w-[60px]"
+                            style={{ backgroundColor: colors.accent.green }}
+                          >
+                            <Text className="text-white text-xs font-medium text-center">
+                              Postfix
+                            </Text>
+                          </View>
+                          <Text
+                            className="ml-3 text-base font-semibold"
+                            style={{ color: colors.text.primary }}
+                          >
+                            -{currentWord.postfix}
+                          </Text>
+                        </View>
+                        <Text
+                          className="flex-1 ml-8 text-base text-left"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          {currentWord.postfix_meaning}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <Text
-                  className="text-sm ml-4 mr-2"
-                  style={{ color: colors.text.secondary }}
-                >
-                  {getPartOfSpeechFull(currentWord.pos ?? "")}
-                </Text>
-                <Pressable className="ml-1 z-20" style={{ zIndex: 20 }}>
-                  <Ionicons
-                    name="volume-high"
-                    size={16}
-                    color={colors.text.secondary}
-                  />
-                </Pressable>
-              </View>
-
-              {/* Pronunciation */}
-              <Text
-                className="text-base mb-3"
-                style={{ color: colors.text.secondary }}
-              >
-                {currentWord.phonetic}
-              </Text>
-
-              {/* Translation */}
-              <Text
-                className="text-xl font-medium mb-3"
-                style={{ color: colors.text.primary }}
-              >
-                {currentWord.definition_vi}
-              </Text>
-
-              {/* Example */}
-              <Text
-                className="text-base mb-2"
-                style={{ color: colors.text.secondary }}
-              >
-                {highlightWordInExample(
-                  currentWord.example_en ?? "",
-                  currentWord.word,
-                  colors,
-                )}
-              </Text>
-
-              {/* Example Vietnamese */}
-              {currentWord.example_vi && (
-                <Text
-                  className="text-base mb-6"
-                  style={{ color: colors.text.secondary }}
-                >
-                  {currentWord.example_vi}
-                </Text>
-              )}
-
-              {/* Anatomy Section */}
-              <View>
-                <Text
-                  className="font-bold text-lg mb-3"
-                  style={{ color: colors.text.primary }}
-                >
-                  Anatomy
-                </Text>
-
-                {/* Prefix */}
-                {currentWord.prefix && (
-                  <View className="flex-row items-center mb-2">
-                    <View className="flex-row items-center w-40">
-                      <View
-                        className="rounded-l-full px-3 py-1 w-[60px]"
-                        style={{ backgroundColor: colors.accent.red }}
-                      >
-                        <Text className="text-white text-xs font-medium text-center">
-                          Prefix
-                        </Text>
-                      </View>
-                      <Text
-                        className="ml-3 text-base font-semibold"
-                        style={{ color: colors.text.primary }}
-                      >
-                        {currentWord.prefix}-
-                      </Text>
-                    </View>
-                    <Text
-                      className="flex-1 ml-8 text-base text-left"
-                      style={{ color: colors.text.secondary }}
-                    >
-                      {currentWord.prefix_meaning}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Infix */}
-                {currentWord.infix && (
-                  <View className="flex-row items-center mb-2">
-                    <View className="flex-row items-center w-40">
-                      <View
-                        className="rounded-l-full px-3 py-1 w-[60px]"
-                        style={{ backgroundColor: colors.accent.purple }}
-                      >
-                        <Text className="text-white text-xs font-medium text-center">
-                          Infix
-                        </Text>
-                      </View>
-                      <Text
-                        className="ml-3 text-base font-semibold"
-                        style={{ color: colors.text.primary }}
-                      >
-                        -{currentWord.infix}-
-                      </Text>
-                    </View>
-                    <Text
-                      className="flex-1 ml-8 text-base text-left"
-                      style={{ color: colors.text.secondary }}
-                    >
-                      {currentWord.infix_meaning}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Postfix */}
-                {currentWord.postfix && (
-                  <View className="flex-row items-center">
-                    <View className="flex-row items-center w-40">
-                      <View
-                        className="rounded-l-full px-3 py-1 w-[60px]"
-                        style={{ backgroundColor: colors.accent.green }}
-                      >
-                        <Text className="text-white text-xs font-medium text-center">
-                          Postfix
-                        </Text>
-                      </View>
-                      <Text
-                        className="ml-3 text-base font-semibold"
-                        style={{ color: colors.text.primary }}
-                      >
-                        -{currentWord.postfix}
-                      </Text>
-                    </View>
-                    <Text
-                      className="flex-1 ml-8 text-base text-left"
-                      style={{ color: colors.text.secondary }}
-                    >
-                      {currentWord.postfix_meaning}
-                    </Text>
-                  </View>
-                )}
-              </View>
+              </Animated.View>
             </View>
-          </Animated.View>
-        </View>
-
-        <View
-          className="w-full mt-4 flex-row items-center justify-between z-20"
-          style={{ zIndex: 20 }}
-        >
-          <Pressable
-            onPress={toggleSortingMode}
-            className="rounded-full px-3 py-2 z-20"
-            style={{
-              backgroundColor: colors.background.secondary,
-              zIndex: 20,
-            }}
-          >
-            <Ionicons name="funnel" size={20} color={colors.text.secondary} />
           </Pressable>
 
-          <View className="flex-row items-center z-20" style={{ zIndex: 20 }}>
+          <View
+            className="w-full mt-4 flex-row items-center justify-between z-20"
+            style={{ zIndex: 20 }}
+          >
             <Pressable
-              onPress={handlePrevious}
-              className="rounded-full px-4 py-2 mr-3 border-2 z-20"
+              onPress={toggleSortingMode}
+              className="rounded-full px-3 py-2 z-20"
               style={{
-                backgroundColor: colors.primary.main,
-                borderColor: "transparent",
-                opacity: 1,
+                backgroundColor: colors.background.secondary,
                 zIndex: 20,
               }}
             >
-              <View className="flex-row items-center">
-                <Ionicons
-                  name="chevron-back"
-                  size={18}
-                  color={colors.text.button}
-                />
-              </View>
+              <Ionicons name="funnel" size={20} color={colors.text.secondary} />
             </Pressable>
 
-            <Text
-              className="text-base mx-1"
-              style={{ color: colors.text.secondary }}
-            >
-              {Math.max(currentIndex + 1, 0)} / {totalCardsInDB || 0}
-            </Text>
+            <View className="flex-row items-center z-20" style={{ zIndex: 20 }}>
+              <Pressable
+                onPress={handlePrevious}
+                className="rounded-full px-4 py-2 mr-3 border-2 z-20"
+                style={{
+                  backgroundColor: colors.primary.main,
+                  borderColor: "transparent",
+                  opacity: 1,
+                  zIndex: 20,
+                }}
+              >
+                <View className="flex-row items-center">
+                  <Ionicons
+                    name="chevron-back"
+                    size={18}
+                    color={colors.text.button}
+                  />
+                </View>
+              </Pressable>
+
+              <Text
+                className="text-base mx-1"
+                style={{ color: colors.text.secondary }}
+              >
+                {Math.max(currentIndex + 1, 0)} / {totalCardsInDB || 0}
+              </Text>
+
+              <Pressable
+                onPress={handleNext}
+                className="rounded-full px-4 py-2 ml-3 border-2 z-20"
+                style={{
+                  backgroundColor: colors.primary.main,
+                  borderColor: "transparent",
+                  opacity: 1,
+                  zIndex: 20,
+                }}
+              >
+                <View className="flex-row items-center">
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={colors.text.button}
+                  />
+                </View>
+              </Pressable>
+            </View>
 
             <Pressable
-              onPress={handleNext}
-              className="rounded-full px-4 py-2 ml-3 border-2 z-20"
+              onPress={shuffleVocabulary}
+              className="rounded-full px-3 py-2 z-20"
               style={{
-                backgroundColor: colors.primary.main,
-                borderColor: "transparent",
-                opacity: 1,
+                backgroundColor: isShuffled
+                  ? colors.accent.blue
+                  : colors.background.secondary,
                 zIndex: 20,
               }}
             >
-              <View className="flex-row items-center">
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.text.button}
-                />
-              </View>
+              <Ionicons
+                name="shuffle"
+                size={20}
+                color={isShuffled ? colors.text.button : colors.text.secondary}
+              />
             </Pressable>
           </View>
-
-          <Pressable
-            onPress={shuffleVocabulary}
-            className="rounded-full px-3 py-2 z-20"
-            style={{
-              backgroundColor: isShuffled
-                ? colors.accent.blue
-                : colors.background.secondary,
-              zIndex: 20,
-            }}
-          >
-            <Ionicons
-              name="shuffle"
-              size={20}
-              color={isShuffled ? colors.text.button : colors.text.secondary}
-            />
-          </Pressable>
         </View>
-      </View>
+      </Pressable>
     </SafeAreaView>
   );
 };

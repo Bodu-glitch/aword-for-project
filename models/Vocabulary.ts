@@ -16,6 +16,7 @@ export interface Vocabulary {
   pos?: string;
   example_en?: string;
   example_vi?: string;
+  audio_path: string;
 }
 
 interface Vocab_Sense {

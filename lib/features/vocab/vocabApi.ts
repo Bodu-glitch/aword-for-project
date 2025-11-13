@@ -425,4 +425,5 @@ export const {
   useGetRandomVocabularyQuery,
   useUpdateVocabsProgressMutation,
   useGetTotalLearnedVocabCountQuery,
+  useLazyGetTotalLearnedVocabCountQuery,
 } = vocabApi;

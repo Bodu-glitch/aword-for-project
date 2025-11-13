@@ -22,6 +22,7 @@ interface Word {
   postfix_meaning: string;
   phonetic: string;
   vocab_senses: VocabSense[];
+  audio_path: string;
 }
 
 interface VocabSense {

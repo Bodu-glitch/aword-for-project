@@ -7,6 +7,7 @@ import { useGetQuestionsQuery } from "@/lib/features/learn/learnApi";
 import {
   useUpdateVocabsProgressMutation,
   type QuestionResult,
+  useLazyGetTotalLearnedVocabCountQuery,
 } from "@/lib/features/vocab/vocabApi";
 import { getColors } from "@/utls/colors";
 import { router } from "expo-router";
@@ -34,6 +35,7 @@ const Index = () => {
     useUpdateVocabsProgressMutation();
 
   const [getProfile] = useLazyGetProfileQuery();
+  const [getTotalLearnedVocabCount] = useLazyGetTotalLearnedVocabCountQuery();
 
   // Tổng kết session
   const [expGained, setExpGained] = React.useState(0);
@@ -163,6 +165,7 @@ const Index = () => {
               },
             ]}
             onContinue={() => setStep(idx * 2 + 2)}
+            audioPath={word.audio_path}
           />,
         ])}
 
@@ -286,6 +289,7 @@ const Index = () => {
                                 // ignore
                               }
                               getProfile();
+                              getTotalLearnedVocabCount();
                               setStep(totalWords * 2 + 1);
                             })();
                           }

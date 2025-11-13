@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
+import PlayAudioButton from "@/components/PlayAudioButton";
 
 type WordPart = {
   text: string;
@@ -25,6 +26,7 @@ type NewWordDetailProps = {
   onContinue?: () => void;
   continueLabel?: string;
   onSpeak?: () => void;
+  audioPath: string;
 };
 
 function clamp(value?: number) {
@@ -74,18 +76,7 @@ export default function NewWordDetail(props: NewWordDetailProps) {
               {p.text}
             </Text>
           ))}
-          <Pressable
-            onPress={props.onSpeak}
-            accessibilityRole="button"
-            accessibilityLabel="Play pronunciation"
-            className="ml-2"
-          >
-            <Ionicons
-              name="volume-high-outline"
-              size={24}
-              color={colors.text.secondary}
-            />
-          </Pressable>
+          <PlayAudioButton audioPath={props.audioPath}></PlayAudioButton>
         </View>
         <Text className="text-xl" style={{ color: colors.text.secondary }}>
           {props.pos}
