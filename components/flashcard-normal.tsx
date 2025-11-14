@@ -1,10 +1,11 @@
+import PlayAudioButton from "@/components/PlayAudioButton";
 import { Vocabulary } from "@/models/Vocabulary";
 import {
   fetchRandomVocabularyBatch,
-  fetchVocabularyBatch,
-  getTotalVocabularyCount,
+  fetchVocabularyBatch
 } from "@/supabase/vocabulary";
 import { getColors } from "@/utls/colors";
+import { getPartOfSpeechFull } from "@/utls/get_part_of_speechfull";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import React, { useEffect, useRef, useState } from "react";
@@ -17,10 +18,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getPartOfSpeechFull } from "@/utls/get_part_of_speechfull";
-import { useAudioPlayer } from "expo-audio";
-import { supabase } from "@/lib/supabase";
-import PlayAudioButton from "@/components/PlayAudioButton";
 
 const { width } = Dimensions.get("window");
 
@@ -336,23 +333,12 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
         </View>
       </View>
 
-      <Pressable onPress={flipCard} className={"flex-1"}>
+      <Pressable onPress={()=> {
+        console.log('Flashcard pressed');
+        flipCard();
+      }} className={"flex-1"}>
         <View className="flex-1 justify-center items-start px-6 ">
-          {/* Touch overlay for flipping card */}
-          {/*<Pressable*/}
-          {/*  className="absolute inset-0 z-10"*/}
-          {/*  onPress={flipCard}*/}
-          {/*  style={{*/}
-          {/*    position: "absolute",*/}
-          {/*    top: 0,*/}
-          {/*    left: 0,*/}
-          {/*    right: 0,*/}
-          {/*    bottom: 0,*/}
-          {/*    zIndex: 10,*/}
-          {/*  }}*/}
-          {/*/>*/}
-
-          <Pressable onPress={flipCard}>
+          
             <View className="relative w-full flex-1 max-h-[500px] min-h-[400px]">
               <Animated.View
                 style={[
@@ -650,7 +636,6 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
                 </View>
               </Animated.View>
             </View>
-          </Pressable>
 
           <View
             className="w-full mt-4 flex-row items-center justify-between z-20"
