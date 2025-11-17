@@ -198,7 +198,7 @@ const Home = () => {
       )}
 
       {/* Menu buttons */}
-      <Link href={"learning/select-root"} asChild>
+      <Link href="/learning/select-root" asChild>
         <Pressable
           className="mb-6 rounded-2xl shadow-sm"
           style={{ backgroundColor: colors.primary.main }}
@@ -296,6 +296,32 @@ const Home = () => {
               </Text>
               <Text className="text-lg" style={{ color: colors.text.button }}>
                 Your learning rank
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+      </Link>
+
+      <Link href={"/admin"} asChild>
+        <Pressable
+          className="mb-6 rounded-2xl shadow-sm"
+          style={{ backgroundColor: colors.primary.main }}
+        >
+          <View className="flex-row items-center p-5">
+            <Ionicons
+              name="ribbon-outline"
+              size={48}
+              color={colors.text.button}
+            />
+            <View className="ml-5">
+              <Text
+                className="font-semibold text-3xl"
+                style={{ color: colors.text.button }}
+              >
+                Admin
+              </Text>
+              <Text className="text-lg" style={{ color: colors.text.button }}>
+                Your admin panel
               </Text>
             </View>
           </View>

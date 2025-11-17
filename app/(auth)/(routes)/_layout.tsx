@@ -26,6 +26,12 @@ const RoutesLayout = () => {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="admin"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 };
