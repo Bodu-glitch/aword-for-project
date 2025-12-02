@@ -74,7 +74,8 @@ const Index = () => {
     setQuestionStartMs(Date.now());
   }, [currentQuestionIndex]);
 
-  if (isGettingQuestions || isUpdatingProgress) {
+  // Show initial loader only when we don't have any data yet.
+  if (isGettingQuestions && !questionsData) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -124,6 +125,8 @@ const Index = () => {
       className="flex-1"
       style={{ backgroundColor: colors.background.primary }}
     >
+      {/* When updating progress, keep the pager mounted to avoid unmounting which
+          causes the pager to jump; show an absolute overlay spinner instead. */}
       <FlowPager index={step}>
         {/* New words pages */}
         {questionsData?.newWords?.map((word, idx) => [
@@ -293,7 +296,9 @@ const Index = () => {
                               }
                               getProfile();
                               getTotalLearnedVocabCount();
-                              setStep(totalWords * 2 + 1);
+                              // Advance one step forward from the current page so the pager
+                              // performs a normal in-place swipe to the QuizResult page.
+                              setStep((prev) => prev + 1);
                             })();
                           }
                           return newQueue;
@@ -330,7 +335,7 @@ const Index = () => {
               icon: "flame-outline",
               color: colors.accent.red,
               text: "Streak",
-              value: `${maxStreak} questions`,
+              value: `${maxStreak} in a row`,
             },
             {
               icon: "flash-outline",
@@ -342,6 +347,25 @@ const Index = () => {
           onContinue={() => router.back()}
         />
       </FlowPager>
+
+      {/* Overlay spinner during update to keep pager state stable */}
+      {isUpdatingProgress && (
+        <View
+          pointerEvents="auto"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.2)",
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.primary.main} />
+        </View>
+      )}
     </View>
   );
 };
