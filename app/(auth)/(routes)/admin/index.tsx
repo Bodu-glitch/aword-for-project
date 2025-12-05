@@ -1,172 +1,170 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet, Dimensions } from "react-native";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
 import { Link } from "expo-router";
-import { Book, FileText, List, Lightbulb } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
+import { getColors } from "@/utls/colors";
+import {
+  useListRootsQuery,
+  useListVocabQuery,
+  useListSensesQuery,
+  useListExamplesQuery,
+  useListSubVocabQuery,
+  useListVocabSubRootsQuery,
+  useListProfilesQuery,
+} from "@/lib/features/admin/adminApi";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
 
-const items = [
-  {
-    key: "vocab",
-    title: "Quản lý Từ vựng",
-    desc: "Thêm, sửa, xóa từ vựng",
-    icon: Book,
-    href: "/admin/vocab",
-    total: 65,
-    latest: "Hôm nay",
-    color: "#4da6ff",
-  },
-  {
-    key: "root",
-    title: "Quản lý Gốc từ",
-    desc: "Thêm, sửa, xóa gốc từ",
-    icon: FileText,
-    href: "/admin/root",
-    total: 75,
-    latest: "Hôm nay",
-    color: "#b68bff",
-  },
-  {
-    key: "examples",
-    title: "Quản lý Ví dụ",
-    desc: "Thêm, sửa, xóa ví dụ",
-    icon: List,
-    href: "/admin/vocab_examples",
-    total: 107,
-    latest: "Hôm nay",
-    color: "#26d07b",
-  },
-  {
-    key: "senses",
-    title: "Quản lý Nghĩa",
-    desc: "Thêm, sửa, xóa nghĩa từ",
-    icon: Lightbulb,
-    href: "/admin/vocab_senses",
-    total: 98,
-    latest: "Hôm nay",
-    color: "#ff9a3c",
-  },
-];
+export default function AdminHome() {
+  const { colorScheme } = useColorScheme();
+  const colors = getColors(colorScheme === "dark");
 
-const AdminIndex = () => {
-  return (
-    <ScrollView
-      contentContainerStyle={[styles.container, { alignItems: "center" }]}
-    >
-      {items.map((it) => {
-        const Icon = it.icon;
-        return (
-          // Wrap Link with a View so marginBottom is applied correctly
-          <View key={it.key} style={{ marginBottom: 24 }}>
-            <Link href={it.href}>
-              <View style={[styles.card, { width: CARD_WIDTH }]}>
-                {/* top */}
-                <View style={styles.cardTop}>
-                  <View
-                    style={[styles.iconWrap, { backgroundColor: it.color }]}
-                  >
-                    <Icon color="#fff" width={22} height={22} />
-                  </View>
-                  <View style={styles.titleWrap}>
-                    <Text style={styles.cardTitle}>{it.title}</Text>
-                    <Text style={styles.cardDesc}>{it.desc}</Text>
-                  </View>
-                </View>
+  const { data: roots } = useListRootsQuery();
+  const { data: vocabs } = useListVocabQuery({});
+  const { data: senses } = useListSensesQuery({});
+  const { data: examples } = useListExamplesQuery({});
+  const { data: subVocabs } = useListSubVocabQuery({});
+  const { data: subRoots } = useListVocabSubRootsQuery({});
+  const { data: subSenses } = useListSensesQuery({});
+  const { data: subExamples } = useListExamplesQuery({});
+  const { data: user } = useListProfilesQuery({});
 
-                {/* bottom */}
-                <View style={styles.cardBottom}>
-                  <View style={styles.infoBox}>
-                    <Text style={styles.infoLabel}>Tổng số</Text>
-                    <Text style={styles.infoValue}>{it.total}</Text>
-                  </View>
-                  <View style={styles.infoBox}>
-                    <Text style={styles.infoLabel}>Mới nhất</Text>
-                    <Text style={styles.infoValue}>{it.latest}</Text>
-                  </View>
-                </View>
-              </View>
-            </Link>
+  const Card = ({
+    href,
+    title,
+    desc,
+    count,
+  }: {
+    href: React.ComponentProps<typeof Link>["href"];
+    title: string;
+    desc: string;
+    count?: number;
+  }) => (
+    <Link href={href} asChild>
+      <TouchableOpacity
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.surface.primary,
+            borderColor: colors.border.primary,
+          },
+        ]}
+      >
+        <Text style={[styles.cardTitle, { color: colors.text.primary }]}>
+          {title}
+        </Text>
+        <Text style={[styles.cardDesc, { color: colors.text.secondary }]}>
+          {desc}
+        </Text>
+        {typeof count === "number" && (
+          <View
+            style={[styles.badge, { backgroundColor: colors.primary.light }]}
+          >
+            <Text style={{ color: colors.text.inverse, fontWeight: "700" }}>
+              {count}
+            </Text>
           </View>
-        );
-      })}
-    </ScrollView>
+        )}
+      </TouchableOpacity>
+    </Link>
   );
-};
 
-export default AdminIndex;
+  return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background.primary }]}
+    >
+      <View style={styles.wrapper}>
+        <Text style={[styles.title, { color: colors.primary.main }]}>
+          Bảng điều khiển Admin
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.text.primary }]}>
+          Quản lý dữ liệu từ vựng và người dùng
+        </Text>
+
+        <View style={styles.grid}>
+          <Card
+            href="/admin/root"
+            title="Gốc từ"
+            desc="Quản lý các gốc từ"
+            count={roots?.length}
+          />
+          <Card
+            href="/admin/vocab"
+            title="Từ vựng"
+            desc="Quản lý từ vựng"
+            count={vocabs?.length}
+          />
+          <Card
+            href="/admin/vocab_senses"
+            title="Nghĩa từ"
+            desc="Quản lý nghĩa theo loại từ"
+            count={senses?.length}
+          />
+          <Card
+            href="/admin/vocab_examples"
+            title="Ví dụ"
+            desc="Quản lý câu ví dụ"
+            count={examples?.length}
+          />
+          <Card
+            href="/admin/users"
+            title="Người dùng"
+            desc="Quản lý người dùng"
+            count={user?.length}
+          />
+          <Card
+            href="/admin/sub_vocab"
+            title="Từ con"
+            desc="Quản lý sub vocab"
+            count={subVocabs?.length}
+          />
+          <Card
+            href="/admin/sub_roots"
+            title="Gốc từ con"
+            desc="Quản lý vocab sub roots"
+            count={subRoots?.length}
+          />
+          <Card
+            href="/admin/sub_vocab_senses"
+            title="Nghĩa từ con"
+            desc="Quản lý nghĩa của sub vocab"
+            count={subSenses?.length}
+          />
+          <Card
+            href="/admin/sub_vocab_examples"
+            title="Ví dụ từ con"
+            desc="Quản lý ví dụ của sub vocab"
+            count={subExamples?.length}
+          />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    paddingBottom: 100,
-    backgroundColor: "#071526",
-  },
-
-  card: {
-    backgroundColor: "#0f1a24",
-    borderRadius: 12,
-    padding: 16,
-    // marginBottom removed — wrapper View now provides spacing
-    overflow: "hidden",
-    borderWidth: 0.5,
-    borderColor: "#a6a6a6ff",
-  },
-
-  cardTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-
-  iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-
-  titleWrap: {
-    flex: 1,
-  },
-
-  cardTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-
-  cardDesc: {
-    color: "#a8b3bf",
-    fontSize: 13,
-  },
-
-  cardBottom: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  infoBox: {
-    flex: 1,
-    backgroundColor: "#16232b",
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 24 },
+  wrapper: { width: "90%", alignSelf: "center" },
+  title: { fontSize: 22, fontWeight: "700", marginBottom: 6, paddingTop: 24 },
+  subtitle: { fontSize: 14, marginBottom: 16 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  card: { borderWidth: 1, borderRadius: 10, padding: 14, width: "48%" },
+  cardTitle: { fontSize: 16, fontWeight: "700" },
+  cardDesc: { fontSize: 13, marginTop: 4 },
+  badge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
-    marginRight: 10,
-  },
-
-  infoLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
-    marginBottom: 6,
-  },
-
-  infoValue: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
   },
 });

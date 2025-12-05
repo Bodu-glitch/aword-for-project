@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
-import { useColorScheme } from "nativewind";
 import { getColors } from "@/utls/colors";
-import { useAudioPlayer, setAudioModeAsync } from "expo-audio";
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
+import { useColorScheme } from "nativewind";
 import React, { useEffect } from "react";
 import { Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";

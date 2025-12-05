@@ -8,7 +8,14 @@ import { Link, router } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useColorScheme } from "nativewind";
 import React, { useEffect, useRef } from "react";
-import { Animated, Image, Pressable, Text, View } from "react-native";
+import {
+  Animated,
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Home = () => {
@@ -197,136 +204,138 @@ const Home = () => {
         </Text>
       )}
 
-      {/* Menu buttons */}
-      <Link href="/learning/select-root" asChild>
-        <Pressable
-          className="mb-6 rounded-2xl shadow-sm"
-          style={{ backgroundColor: colors.primary.main }}
-        >
-          <View className="flex-row items-center p-5">
-            <MaterialCommunityIcons
-              name="book-open-page-variant"
-              size={48}
-              color={colors.text.button}
-            />
-            <View className="ml-5">
-              <Text
-                className="font-semibold text-3xl"
-                style={{ color: colors.text.button }}
-              >
-                Learning
-              </Text>
-              <Text className="text-lg" style={{ color: colors.text.button }}>
-                lesson #20
-              </Text>
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+        {/* Menu buttons */}
+        <Link href="/learning/select-root" asChild>
+          <Pressable
+            className="mb-6 rounded-2xl shadow-sm"
+            style={{ backgroundColor: colors.primary.main }}
+          >
+            <View className="flex-row items-center p-5">
+              <MaterialCommunityIcons
+                name="book-open-page-variant"
+                size={48}
+                color={colors.text.button}
+              />
+              <View className="ml-5">
+                <Text
+                  className="font-semibold text-3xl"
+                  style={{ color: colors.text.button }}
+                >
+                  Learning
+                </Text>
+                <Text className="text-lg" style={{ color: colors.text.button }}>
+                  lesson #20
+                </Text>
+              </View>
             </View>
-          </View>
-        </Pressable>
-      </Link>
+          </Pressable>
+        </Link>
 
-      <Link href={"/flashcard"} asChild>
-        <Pressable
-          className="mb-6 rounded-2xl shadow-sm"
-          style={{ backgroundColor: colors.primary.main }}
-        >
-          <View className="flex-row items-center p-5">
-            <MaterialCommunityIcons
-              name="cards-outline"
-              size={48}
-              color={colors.text.button}
-            />
-            <View className="ml-5">
-              <Text
-                className="font-semibold text-3xl"
-                style={{ color: colors.text.button }}
-              >
-                Flashcard
-              </Text>
-              <Text className="text-lg" style={{ color: colors.text.button }}>
-                No. of card 30
-              </Text>
+        <Link href={"/flashcard"} asChild>
+          <Pressable
+            className="mb-6 rounded-2xl shadow-sm"
+            style={{ backgroundColor: colors.primary.main }}
+          >
+            <View className="flex-row items-center p-5">
+              <MaterialCommunityIcons
+                name="cards-outline"
+                size={48}
+                color={colors.text.button}
+              />
+              <View className="ml-5">
+                <Text
+                  className="font-semibold text-3xl"
+                  style={{ color: colors.text.button }}
+                >
+                  Flashcard
+                </Text>
+                <Text className="text-lg" style={{ color: colors.text.button }}>
+                  No. of card 30
+                </Text>
+              </View>
             </View>
-          </View>
-        </Pressable>
-      </Link>
+          </Pressable>
+        </Link>
 
-      <Link href={"/wordex"} asChild>
-        <Pressable
-          className="mb-6 rounded-2xl shadow-sm"
-          style={{ backgroundColor: colors.primary.main }}
-        >
-          <View className="flex-row items-center p-5">
-            <Ionicons
-              name="search-outline"
-              size={48}
-              color={colors.text.button}
-            />
-            <View className="ml-5">
-              <Text
-                className="font-semibold text-3xl"
-                style={{ color: colors.text.button }}
-              >
-                Wordex
-              </Text>
-              <Text className="text-lg" style={{ color: colors.text.button }}>
-                Looking for a word
-              </Text>
+        <Link href={"/wordex"} asChild>
+          <Pressable
+            className="mb-6 rounded-2xl shadow-sm"
+            style={{ backgroundColor: colors.primary.main }}
+          >
+            <View className="flex-row items-center p-5">
+              <Ionicons
+                name="search-outline"
+                size={48}
+                color={colors.text.button}
+              />
+              <View className="ml-5">
+                <Text
+                  className="font-semibold text-3xl"
+                  style={{ color: colors.text.button }}
+                >
+                  Wordex
+                </Text>
+                <Text className="text-lg" style={{ color: colors.text.button }}>
+                  Looking for a word
+                </Text>
+              </View>
             </View>
-          </View>
-        </Pressable>
-      </Link>
+          </Pressable>
+        </Link>
 
-      <Link href={"/leaderboard"} asChild>
-        <Pressable
-          className="mb-6 rounded-2xl shadow-sm"
-          style={{ backgroundColor: colors.primary.main }}
-        >
-          <View className="flex-row items-center p-5">
-            <Ionicons
-              name="ribbon-outline"
-              size={48}
-              color={colors.text.button}
-            />
-            <View className="ml-5">
-              <Text
-                className="font-semibold text-3xl"
-                style={{ color: colors.text.button }}
-              >
-                Leaderboard
-              </Text>
-              <Text className="text-lg" style={{ color: colors.text.button }}>
-                Your learning rank
-              </Text>
+        <Link href={"/leaderboard"} asChild>
+          <Pressable
+            className="mb-6 rounded-2xl shadow-sm"
+            style={{ backgroundColor: colors.primary.main }}
+          >
+            <View className="flex-row items-center p-5">
+              <Ionicons
+                name="ribbon-outline"
+                size={48}
+                color={colors.text.button}
+              />
+              <View className="ml-5">
+                <Text
+                  className="font-semibold text-3xl"
+                  style={{ color: colors.text.button }}
+                >
+                  Leaderboard
+                </Text>
+                <Text className="text-lg" style={{ color: colors.text.button }}>
+                  Your learning rank
+                </Text>
+              </View>
             </View>
-          </View>
-        </Pressable>
-      </Link>
+          </Pressable>
+        </Link>
 
-      <Link href={"/admin"} asChild>
-        <Pressable
-          className="mb-6 rounded-2xl shadow-sm"
-          style={{ backgroundColor: colors.primary.main }}
-        >
-          <View className="flex-row items-center p-5">
-            <Ionicons
-              name="ribbon-outline"
-              size={48}
-              color={colors.text.button}
-            />
-            <View className="ml-5">
-              <Text
-                className="font-semibold text-3xl"
-                style={{ color: colors.text.button }}
-              >
-                Admin
-              </Text>
-              <Text className="text-lg" style={{ color: colors.text.button }}>
-                Your admin panel
-              </Text>
+        <Link href={"/admin"} asChild>
+          <Pressable
+            className="mb-6 rounded-2xl shadow-sm"
+            style={{ backgroundColor: colors.primary.main }}
+          >
+            <View className="flex-row items-center p-5">
+              <Ionicons
+                name="ribbon-outline"
+                size={48}
+                color={colors.text.button}
+              />
+              <View className="ml-5">
+                <Text
+                  className="font-semibold text-3xl"
+                  style={{ color: colors.text.button }}
+                >
+                  Admin
+                </Text>
+                <Text className="text-lg" style={{ color: colors.text.button }}>
+                  Your admin panel
+                </Text>
+              </View>
             </View>
-          </View>
-        </Pressable>
-      </Link>
+          </Pressable>
+        </Link>
+      </ScrollView>
     </SafeAreaView>
   );
 };

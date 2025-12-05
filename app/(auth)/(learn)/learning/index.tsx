@@ -76,7 +76,8 @@ const Index = () => {
     setQuestionStartMs(Date.now());
   }, [currentQuestionIndex]);
 
-  if (isGettingQuestions || isUpdatingProgress) {
+  // Show initial loader only when we don't have any data yet.
+  if (isGettingQuestions && !questionsData) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -333,7 +334,7 @@ const Index = () => {
               icon: "flame-outline",
               color: colors.accent.red,
               text: "Streak",
-              value: `${maxStreak} questions`,
+              value: `${maxStreak} in a row`,
             },
             {
               icon: "flash-outline",
@@ -345,6 +346,25 @@ const Index = () => {
           onContinue={() => router.back()}
         />
       </FlowPager>
+
+      {/* Overlay spinner during update to keep pager state stable */}
+      {isUpdatingProgress && (
+        <View
+          pointerEvents="auto"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.2)",
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.primary.main} />
+        </View>
+      )}
     </View>
   );
 };

@@ -12,25 +12,35 @@ import { Icon } from "react-native-elements";
 import { useColorScheme } from "nativewind";
 import { getColors } from "@/utls/colors";
 import {
-  useListSensesQuery,
-  useUpsertSenseMutation,
-  useDeleteSenseMutation,
-  useListVocabQuery,
+  useListSubVocabSensesQuery,
+  useUpsertSubVocabSenseMutation,
+  useDeleteSubVocabSenseMutation,
+  useListSubVocabQuery,
 } from "@/lib/features/admin/adminApi";
 import SimpleEditModal from "@/components/SimpleEditModal";
 import sanitizeUpsert from "@/utls/sanitizeUpsert";
 
-const Page = () => {
+export default function SubVocabSensesPage() {
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme === "dark");
-  const { data: data = [] } = useListSensesQuery({});
-  const { data: vocabs = [] } = useListVocabQuery({});
-  const [upsertSense] = useUpsertSenseMutation();
-  const [deleteSense] = useDeleteSenseMutation();
+  const { data: data = [] } = useListSubVocabSensesQuery({});
+  const { data: subVocabData } = useListSubVocabQuery({});
+  const [upsertSense] = useUpsertSubVocabSenseMutation();
+  const [deleteSense] = useDeleteSubVocabSenseMutation();
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = (query || "").trim().toLowerCase();
+    if (!q) return data;
+    return (data || []).filter((it: any) => {
+      const def = (it.definition || "").toString().toLowerCase();
+      const pos = (it.pos || "").toString().toLowerCase();
+      return def.includes(q) || pos.includes(q);
+    });
+  }, [data, query]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [query, setQuery] = useState("");
 
   const handleAdd = () => {
     setEditing(null);
@@ -49,16 +59,6 @@ const Page = () => {
     await upsertSense(payload as any).unwrap();
     setModalVisible(false);
   };
-
-  const filtered = useMemo(() => {
-    const q = (query || "").trim().toLowerCase();
-    if (!q) return data;
-    return (data || []).filter((it: any) => {
-      const def = (it.definition || "").toString().toLowerCase();
-      const pos = (it.pos || "").toString().toLowerCase();
-      return def.includes(q) || pos.includes(q);
-    });
-  }, [data, query]);
 
   const renderItem = ({ item }: { item: any }) => (
     <View
@@ -93,7 +93,6 @@ const Page = () => {
             </Text>
           </View>
         </View>
-
         <View style={styles.rowTopRight}>
           <TouchableOpacity
             onPress={() => handleEdit(item)}
@@ -119,11 +118,9 @@ const Page = () => {
           </TouchableOpacity>
         </View>
       </View>
-
       <Text style={[styles.definitionText, { color: colors.text.primary }]}>
         {item.definition}
       </Text>
-
       <Text style={[styles.dateText, { color: colors.text.tertiary }]}>
         {item.created_at}
       </Text>
@@ -137,13 +134,12 @@ const Page = () => {
       <View style={styles.wrapper}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.primary.main }]}>
-            Quản lý Nghĩa từ
+            Sub Vocab Senses
           </Text>
           <Text style={[styles.subtitle, { color: colors.text.primary }]}>
-            Quản lý các nghĩa và loại từ vựng
+            Quản lý nghĩa theo loại từ của sub vocab
           </Text>
         </View>
-
         <View style={styles.controls}>
           <TextInput
             value={query}
@@ -168,13 +164,11 @@ const Page = () => {
             </Text>
           </TouchableOpacity>
         </View>
-
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: colors.text.tertiary }]}>
               Không có nghĩa nào
@@ -188,11 +182,12 @@ const Page = () => {
         title={editing ? "Chỉnh sửa nghĩa" : "Thêm nghĩa"}
         fields={[
           {
-            name: "vocab_id",
-            label: "Vocab",
-            options: (vocabs || []).map((v: any) => ({
-              label: v.word,
-              value: v.id,
+            name: "sub_vocab_id",
+            label: "Sub Vocab ID",
+            placeholder: "uuid của sub_vocab",
+            options: (subVocabData || []).map((sv: any) => ({
+              label: sv.word,
+              value: sv.id,
             })),
           },
           { name: "word", label: "Từ" },
@@ -207,121 +202,21 @@ const Page = () => {
       />
     </SafeAreaView>
   );
-};
-
-export default Page;
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 120,
-  },
-  wrapper: {
-    width: "90%",
-    alignSelf: "center",
-  },
-  header: {
-    marginBottom: 12,
-    paddingTop: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 10,
-    paddingTop: 24,
-  },
-  subtitle: {
-    fontSize: 14,
-  },
-  controls: {
-    marginTop: 6,
-    marginBottom: 12,
-  },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 24 },
+  wrapper: { width: "90%", alignSelf: "center" },
+  header: { marginBottom: 12, paddingTop: 8 },
+  title: { fontSize: 22, fontWeight: "700", marginBottom: 10, paddingTop: 24 },
+  subtitle: { fontSize: 14 },
+  controls: { marginTop: 6, marginBottom: 12 },
   addBtn: {
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 8,
     alignSelf: "flex-start",
     marginBottom: 18,
-  },
-  addBtnText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  list: {
-    paddingBottom: 24,
-  },
-
-  card: {
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
-
-  rowTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  rowTopLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  indexBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 8,
-    borderWidth: 1,
-  },
-  indexText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  posPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  posText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  rowTopRight: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 12,
-    justifyContent: "space-between",
-  },
-
-  definitionText: {
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 8,
-    paddingTop: 6,
-  },
-
-  iconBtn: {
-    marginLeft: 0,
-  },
-
-  dateText: {
-    fontSize: 12,
-    marginTop: 6,
-  },
-
-  label: {
-    fontSize: 13,
-    marginBottom: 6,
-  },
-
-  empty: {
-    textAlign: "center",
-    marginTop: 24,
   },
   search: {
     width: "100%",
@@ -331,4 +226,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
+  list: { paddingBottom: 24 },
+  card: { borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1 },
+  rowTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  rowTopLeft: { flexDirection: "row", alignItems: "center" },
+  indexBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+  indexText: { fontSize: 12, fontWeight: "700" },
+  rowTopRight: { flexDirection: "row", alignItems: "center", paddingRight: 12 },
+  iconBtn: { marginLeft: 20 },
+  posPill: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  posText: { fontSize: 12, fontWeight: "700" },
+  definitionText: { fontSize: 15, marginBottom: 10, lineHeight: 20 },
+  dateText: { fontSize: 12, marginTop: 6 },
+  empty: { textAlign: "center", marginTop: 24 },
 });

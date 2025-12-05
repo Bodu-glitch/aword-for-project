@@ -5,6 +5,7 @@ import { vocabApi } from "@/lib/features/vocab/vocabApi";
 import { searchSlice } from "@/lib/features/search/searchSlice";
 import { profileApi } from "@/lib/features/profile/profileApi";
 import { leaderboardApi } from "@/lib/features/leaderboard/leaderboardApi";
+import { adminApi } from "@/lib/features/admin/adminApi";
 
 export const makeStore = () => {
   return configureStore({
@@ -15,6 +16,7 @@ export const makeStore = () => {
         vocabApi.middleware,
         profileApi.middleware,
         leaderboardApi.middleware,
+        adminApi.middleware,
       ),
   });
 };
@@ -26,6 +28,7 @@ const rootReducer = combineReducers({
   [vocabApi.reducerPath]: vocabApi.reducer,
   [profileApi.reducerPath]: profileApi.reducer,
   [leaderboardApi.reducerPath]: leaderboardApi.reducer,
+  [adminApi.reducerPath]: adminApi.reducer,
 });
 
 export type AppStore = ReturnType<typeof makeStore>;

@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -12,25 +11,35 @@ import { Icon } from "react-native-elements";
 import { useColorScheme } from "nativewind";
 import { getColors } from "@/utls/colors";
 import {
-  useListExamplesQuery,
-  useUpsertExampleMutation,
-  useDeleteExampleMutation,
-  useListVocabQuery,
+  useListSubVocabExamplesQuery,
+  useUpsertSubVocabExampleMutation,
+  useDeleteSubVocabExampleMutation,
+  useListSubVocabQuery,
 } from "@/lib/features/admin/adminApi";
 import SimpleEditModal from "@/components/SimpleEditModal";
 import sanitizeUpsert from "@/utls/sanitizeUpsert";
 
-const Page = () => {
+export default function SubVocabExamplesPage() {
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme === "dark");
-  const { data: data = [] } = useListExamplesQuery({});
-  const { data: vocabs = [] } = useListVocabQuery({});
-  const [upsertExample] = useUpsertExampleMutation();
-  const [deleteExample] = useDeleteExampleMutation();
+  const { data: data = [] } = useListSubVocabExamplesQuery({});
+  const { data: subVocabData } = useListSubVocabQuery({});
+  const [upsertExample] = useUpsertSubVocabExampleMutation();
+  const [deleteExample] = useDeleteSubVocabExampleMutation();
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = (query || "").trim().toLowerCase();
+    if (!q) return data;
+    return (data || []).filter((it: any) => {
+      const en = (it.example_en || "").toString().toLowerCase();
+      const vi = (it.example_vi || "").toString().toLowerCase();
+      return en.includes(q) || vi.includes(q);
+    });
+  }, [data, query]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [query, setQuery] = useState("");
 
   const handleAdd = () => {
     setEditing(null);
@@ -49,16 +58,6 @@ const Page = () => {
     await upsertExample(payload as any).unwrap();
     setModalVisible(false);
   };
-
-  const filtered = useMemo(() => {
-    const q = (query || "").trim().toLowerCase();
-    if (!q) return data;
-    return (data || []).filter((it: any) => {
-      const en = (it.example_en || "").toString().toLowerCase();
-      const vi = (it.example_vi || "").toString().toLowerCase();
-      return en.includes(q) || vi.includes(q);
-    });
-  }, [data, query]);
 
   const renderItem = ({ item, index }: { item: any; index: number }) => (
     <View
@@ -86,7 +85,6 @@ const Page = () => {
             </Text>
           </View>
         </View>
-
         <View style={styles.rowTopRight}>
           <TouchableOpacity
             onPress={() => handleEdit(item)}
@@ -112,14 +110,12 @@ const Page = () => {
           </TouchableOpacity>
         </View>
       </View>
-
       <Text style={[styles.label, { color: colors.text.tertiary }]}>
         English:
       </Text>
       <Text style={[styles.content, { color: colors.text.primary }]}>
         {item.example_en}
       </Text>
-
       <Text style={[styles.label, { color: colors.text.tertiary }]}>
         Tiếng Việt:
       </Text>
@@ -130,68 +126,61 @@ const Page = () => {
   );
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background.primary }]}
-    >
-      <View style={styles.wrapper}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.primary.main }]}>
-            Quản lý Ví dụ
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.text.primary }]}>
-            Quản lý các câu ví dụ cho từ vựng
-          </Text>
-        </View>
-
-        <View style={styles.controls}>
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Tìm kiếm ví dụ..."
-            placeholderTextColor={colors.text.tertiary}
-            style={[
-              styles.search,
-              {
-                backgroundColor: colors.surface.secondary,
-                borderColor: colors.border.primary,
-                color: colors.text.primary,
-              },
-            ]}
-          />
-          <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: colors.primary.main }]}
-            onPress={handleAdd}
-          >
-            <Text style={{ color: colors.text.button, fontWeight: "600" }}>
-              + Thêm ví dụ
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Text style={[styles.empty, { color: colors.text.tertiary }]}>
-              Không có ví dụ
-            </Text>
-          }
-        />
+    <View style={styles.wrapper}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.primary.main }]}>
+          Sub Vocab Examples
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.text.primary }]}>
+          Quản lý ví dụ của sub vocab
+        </Text>
       </View>
-
+      <View style={styles.controls}>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Tìm kiếm ví dụ..."
+          placeholderTextColor={colors.text.tertiary}
+          style={[
+            styles.search,
+            {
+              backgroundColor: colors.surface.secondary,
+              borderColor: colors.border.primary,
+              color: colors.text.primary,
+            },
+          ]}
+        />
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: colors.primary.main }]}
+          onPress={handleAdd}
+        >
+          <Text style={{ color: colors.text.button, fontWeight: "600" }}>
+            + Thêm ví dụ
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        data={filtered}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          <Text style={[styles.empty, { color: colors.text.tertiary }]}>
+            Không có ví dụ
+          </Text>
+        }
+      />
       <SimpleEditModal
         visible={modalVisible}
         title={editing ? "Chỉnh sửa ví dụ" : "Thêm ví dụ"}
         fields={[
           {
-            name: "vocab_id",
-            label: "Vocab",
-            options: (vocabs || []).map((v: any) => ({
-              label: v.word,
-              value: v.id,
+            name: "sub_vocab_id",
+            label: "Sub Vocab ID",
+            placeholder: "uuid của sub_vocab",
+            options: (subVocabData || []).map((it: any) => ({
+              label: it.word,
+              value: it.id,
             })),
           },
           { name: "example_en", label: "Tiếng Anh" },
@@ -203,39 +192,17 @@ const Page = () => {
         onCancel={() => setModalVisible(false)}
         submitText={editing ? "Cập nhật" : "Thêm"}
       />
-    </SafeAreaView>
+    </View>
   );
-};
-
-export default Page;
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
-  },
-  wrapper: {
-    width: "90%",
-    alignSelf: "center",
-  },
-  header: {
-    marginBottom: 12,
-    paddingTop: 8,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 10,
-    paddingTop: 24,
-  },
-  subtitle: {
-    fontSize: 14,
-  },
-  controls: {
-    marginTop: 6,
-    marginBottom: 12,
-  },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 24 },
+  wrapper: { width: "90%", alignSelf: "center" },
+  header: { marginBottom: 12, paddingTop: 8 },
+  title: { fontSize: 22, fontWeight: "700", marginBottom: 10, paddingTop: 24 },
+  subtitle: { fontSize: 14 },
+  controls: { marginTop: 6, marginBottom: 12 },
   addBtn: {
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -251,28 +218,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  list: {
-    paddingBottom: 24,
-  },
-
-  /* card style match vocab.tsx */
-  card: {
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
-
+  list: { paddingBottom: 24 },
+  card: { borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1 },
   rowTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
-  rowTopLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  rowTopLeft: { flexDirection: "row", alignItems: "center" },
   indexBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -280,31 +234,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
     borderWidth: 1,
   },
-  indexText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  rowTopRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingRight: 12,
-  },
-  iconBtn: {
-    marginLeft: 20,
-  },
-
-  label: {
-    fontSize: 13,
-    marginBottom: 6,
-  },
-  content: {
-    fontSize: 15,
-    marginBottom: 10,
-    lineHeight: 20,
-  },
-
-  empty: {
-    textAlign: "center",
-    marginTop: 24,
-  },
+  indexText: { fontSize: 12, fontWeight: "700" },
+  rowTopRight: { flexDirection: "row", alignItems: "center", paddingRight: 12 },
+  iconBtn: { marginLeft: 20 },
+  label: { fontSize: 13, marginBottom: 6 },
+  content: { fontSize: 15, marginBottom: 10, lineHeight: 20 },
+  empty: { textAlign: "center", marginTop: 24 },
 });
