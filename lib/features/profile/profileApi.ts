@@ -12,6 +12,7 @@ export interface Profile {
   avatar_url: string;
   streak_days: number;
   last_active_at: string;
+  role: string;
 }
 
 export interface UpdateProfileInput {
@@ -47,7 +48,7 @@ export const profileApi = createApi({
           const { data, error } = await supabase
             .from("profiles")
             .select(
-              "id, created_at, email, full_name, avatar_url, streak_days, last_active_at",
+              "id, created_at, email, full_name, avatar_url, streak_days, last_active_at, role",
             )
             .eq("id", profileId)
             .single();

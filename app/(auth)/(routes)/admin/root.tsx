@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   SafeAreaView,
   View,
@@ -12,61 +12,70 @@ import { Icon } from "react-native-elements";
 import { useColorScheme } from "nativewind";
 import { getColors } from "@/utls/colors";
 import SimpleEditModal from "@/components/SimpleEditModal";
-
-const initialData = [
-  {
-    id: "1",
-    tag: "dict",
-    root: "dict",
-    meaning: "nói, nói ra",
-    date: "25/11/2025",
-  },
-  {
-    id: "2",
-    tag: "spec",
-    root: "spec",
-    meaning: "nhìn, quan sát",
-    date: "25/11/2025",
-  },
-  {
-    id: "3",
-    tag: "port",
-    root: "port",
-    meaning: "mang, vận chuyển",
-    date: "25/11/2025",
-  },
-  { id: "4", tag: "scrib", root: "scrib", meaning: "viết", date: "25/11/2025" },
-  {
-    id: "5",
-    tag: "duct",
-    root: "duct",
-    meaning: "dẫn, dắt",
-    date: "25/11/2025",
-  },
-];
+import {
+  useListRootsQuery,
+  useUpsertRootMutation,
+  useDeleteRootMutation,
+} from "@/lib/features/admin/adminApi";
 
 const RootPage = () => {
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme === "dark");
   const [query, setQuery] = useState("");
-  const [data, setData] = useState(initialData);
+  // Don't assume fixed item height — let FlatList measure items naturally
+  // server data/hooks
+  const { data: data = [], isLoading, error } = useListRootsQuery({});
+  const [upsertRoot] = useUpsertRootMutation();
+  const [deleteRoot] = useDeleteRootMutation();
   const [modalVisible, setModalVisible] = useState(false);
-  const [editing, setEditing] = useState<null | (typeof initialData)[0]>(null);
+  const [editing, setEditing] = useState<any | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return data;
-    return data.filter(
-      (item) =>
-        item.tag.toLowerCase().includes(q) ||
-        item.meaning.toLowerCase().includes(q) ||
-        item.root.toLowerCase().includes(q),
-    );
+    return (data || []).filter((item: any) => {
+      const code = (item.root_code || "") as string;
+      const meaning = (item.root_meaning || "") as string;
+      return (
+        code.toLowerCase().includes(q) || meaning.toLowerCase().includes(q)
+      );
+    });
   }, [query, data]);
 
-  const handleDelete = (id: string) =>
-    setData((prev) => prev.filter((i) => i.id !== id));
-  const handleEdit = (item: (typeof initialData)[0]) => {
+  // Debug logs to verify counts and visible items
+  useEffect(() => {
+    console.log(
+      "[RootPage] total data.length:",
+      Array.isArray(data) ? data.length : typeof data,
+    );
+    console.log(
+      "[RootPage] filtered.length:",
+      Array.isArray(filtered) ? filtered.length : typeof filtered,
+    );
+    try {
+      if (Array.isArray(data) && data.length > 0) {
+        console.log(
+          "[RootPage] first id:",
+          data[0]?.id,
+          "last id:",
+          data[data.length - 1]?.id,
+        );
+      }
+    } catch (e) {
+      console.debug("RootPage id debug error", e);
+    }
+  }, [data, filtered]);
+
+  const viewableRef = useRef<any>(null);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteRoot({ id }).unwrap();
+    } catch (e) {
+      console.error("deleteRoot failed", e);
+    }
+  };
+  const handleEdit = (item: any) => {
     setEditing(item);
     setModalVisible(true);
   };
@@ -75,24 +84,18 @@ const RootPage = () => {
     setModalVisible(true);
   };
   const onSubmit = (values: any) => {
-    if (editing) {
-      setData((prev) =>
-        prev.map((i) => (i.id === editing.id ? { ...i, ...values } : i)),
-      );
-    } else {
-      const newRow = {
-        id: String(Date.now()),
-        tag: values.tag || "",
-        root: values.root || values.tag || "",
-        meaning: values.meaning || "",
-        date: new Date().toISOString().slice(0, 10),
-      } as (typeof initialData)[0];
-      setData((prev) => [newRow, ...prev]);
-    }
-    setModalVisible(false);
+    (async () => {
+      try {
+        await upsertRoot(values as any).unwrap();
+      } catch (e) {
+        console.error("upsertRoot failed", e);
+      } finally {
+        setModalVisible(false);
+      }
+    })();
   };
 
-  const renderItem = ({ item }: { item: (typeof initialData)[0] }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <View
       style={[
         styles.card,
@@ -108,7 +111,7 @@ const RootPage = () => {
           style={[styles.tagPill, { backgroundColor: colors.primary.light }]}
         >
           <Text style={[styles.tagPillText, { color: colors.text.inverse }]}>
-            {item.tag}
+            {item.root_code ?? item.tag}
           </Text>
         </View>
 
@@ -140,12 +143,12 @@ const RootPage = () => {
 
       {/* meaning as second row */}
       <Text style={[styles.meaningText, { color: colors.text.primary }]}>
-        {item.meaning}
+        {item.root_meaning ?? item.meaning}
       </Text>
 
       {/* date as third row */}
       <Text style={[styles.dateText, { color: colors.text.tertiary }]}>
-        {item.date}
+        {item.created_at ? new Date(item.created_at).toLocaleDateString() : ""}
       </Text>
     </View>
   );
@@ -190,29 +193,68 @@ const RootPage = () => {
           />
         </View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Text style={[styles.empty, { color: colors.text.tertiary }]}>
-              Không có gốc từ
-            </Text>
-          }
-        />
+        {isLoading ? (
+          <Text
+            style={{
+              color: colors.text.tertiary,
+              textAlign: "center",
+              marginTop: 12,
+            }}
+          >
+            Đang tải dữ liệu...
+          </Text>
+        ) : error ? (
+          <Text
+            style={{
+              color: colors.accent?.red ?? "red",
+              textAlign: "center",
+              marginTop: 12,
+            }}
+          >
+            Lỗi khi tải dữ liệu:{" "}
+            {(error as any)?.message ?? JSON.stringify(error)}
+          </Text>
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item, index) =>
+              item && item.id ? String(item.id) : `idx-${index}`
+            }
+            renderItem={renderItem}
+            contentContainerStyle={[styles.list, { flexGrow: 1 }]}
+            showsVerticalScrollIndicator={true}
+            ListEmptyComponent={
+              <Text style={[styles.empty, { color: colors.text.tertiary }]}>
+                Không có gốc từ
+              </Text>
+            }
+            style={{ flex: 1 }}
+            // render window tuning (conservative values so FlatList measures items)
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={11}
+            removeClippedSubviews={false}
+            onViewableItemsChanged={({ viewableItems }) => {
+              try {
+                const indices = viewableItems.map((v: any) => v.index);
+                viewableRef.current = indices;
+              } catch (err) {
+                console.debug("viewableItems error", err);
+              }
+            }}
+            viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
+          />
+        )}
       </View>
 
       <SimpleEditModal
         visible={modalVisible}
         title={editing ? "Chỉnh sửa gốc từ" : "Thêm gốc từ"}
         fields={[
-          { name: "tag", label: "Mã gốc", placeholder: "vd: dict" },
-          { name: "root", label: "Gốc", placeholder: "vd: dict" },
+          { name: "root_code", label: "Mã gốc", placeholder: "vd: dict" },
           {
-            name: "meaning",
-            label: "Ý nghĩa",
+            name: "root_meaning",
+            label: "Nghĩa gốc",
             placeholder: "vd: nói, nói ra",
             multiline: true,
           },
@@ -230,7 +272,7 @@ export default RootPage;
 
 const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 24 },
-  wrapper: { width: "90%", alignSelf: "center" },
+  wrapper: { width: "90%", alignSelf: "center", flex: 1 },
   header: { marginBottom: 12, paddingTop: 8 },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 10, paddingTop: 24 },
   subtitle: { fontSize: 14 },

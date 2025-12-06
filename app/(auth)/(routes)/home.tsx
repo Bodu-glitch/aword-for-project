@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { getColors } from "@/utls/colors";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
+import { Button } from "heroui-native";
 import LottieView from "lottie-react-native";
 import { useColorScheme } from "nativewind";
 import React, { useEffect, useRef } from "react";
@@ -97,39 +98,55 @@ const Home = () => {
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-900 px-5 pt-10">
       {/* Header */}
-      <View className="flex-row justify-between items-center">
-        <Pressable
-          onPress={() => router.push("/profile")}
-          className="flex-row items-center"
-        >
-          {isLoadingProfile ? (
-            <View className="flex-row items-center">
-              <View
-                className="w-10 h-10 rounded-full mr-2"
-                style={{ backgroundColor: colors.surface.secondary }}
-              />
-              <View
-                className="h-4 w-24 rounded"
-                style={{ backgroundColor: colors.surface.secondary }}
-              />
+      <View className="flex-row justify-between items-start">
+        {/* Left: avatar + name and small Admin button underneath */}
+        <View>
+          <Pressable
+            onPress={() => router.push("/profile")}
+            className="flex-row items-center"
+          >
+            {isLoadingProfile ? (
+              <View className="flex-row items-center">
+                <View
+                  className="w-10 h-10 rounded-full mr-2"
+                  style={{ backgroundColor: colors.surface.secondary }}
+                />
+                <View
+                  className="h-4 w-24 rounded"
+                  style={{ backgroundColor: colors.surface.secondary }}
+                />
+              </View>
+            ) : (
+              <>
+                <Image
+                  source={{
+                    uri:
+                      getAvatarUrl(profile?.avatar_url) ||
+                      user.avatar_url ||
+                      "https://i.pravatar.cc/100",
+                  }}
+                  className="w-10 h-10 rounded-full mr-2"
+                />
+                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                  {profile?.full_name || user.name || "User"}
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          {profile?.role === "admin" && (
+            // Small Admin button under avatar
+            <View style={{ marginTop: 8 }}>
+              <Button
+                size="sm"
+                variant={colorScheme === "dark" ? "tertiary" : "tertiary"}
+                onPress={() => router.push("/admin")}
+              >
+                Admin
+              </Button>
             </View>
-          ) : (
-            <>
-              <Image
-                source={{
-                  uri:
-                    getAvatarUrl(profile?.avatar_url) ||
-                    user.avatar_url ||
-                    "https://i.pravatar.cc/100",
-                }}
-                className="w-10 h-10 rounded-full mr-2"
-              />
-              <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {profile?.full_name || user.name || "User"}
-              </Text>
-            </>
           )}
-        </Pressable>
+        </View>
 
         <View className="flex-row">
           <Link href={"/setting"} asChild>
@@ -304,32 +321,6 @@ const Home = () => {
                 </Text>
                 <Text className="text-lg" style={{ color: colors.text.button }}>
                   Your learning rank
-                </Text>
-              </View>
-            </View>
-          </Pressable>
-        </Link>
-
-        <Link href={"/admin"} asChild>
-          <Pressable
-            className="mb-6 rounded-2xl shadow-sm"
-            style={{ backgroundColor: colors.primary.main }}
-          >
-            <View className="flex-row items-center p-5">
-              <Ionicons
-                name="ribbon-outline"
-                size={48}
-                color={colors.text.button}
-              />
-              <View className="ml-5">
-                <Text
-                  className="font-semibold text-3xl"
-                  style={{ color: colors.text.button }}
-                >
-                  Admin
-                </Text>
-                <Text className="text-lg" style={{ color: colors.text.button }}>
-                  Your admin panel
                 </Text>
               </View>
             </View>
