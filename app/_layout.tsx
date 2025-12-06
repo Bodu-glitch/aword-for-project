@@ -8,34 +8,7 @@ import React from "react";
 import { Provider } from "react-redux";
 import { StatusBar } from "expo-status-bar";
 import "./global.css";
-import { getColors } from "@/utls/colors";
-
-// const themes = {
-//   blue: {
-//     light: vars({
-//       "--color-primary": "6 89 231",
-//     }),
-//     dark: vars({
-//       "--color-primary": "96 165 250",
-//     }),
-//   },
-// };
-
-// function Theme(props: { children: React.ReactNode }) {
-//   const { colorScheme } = useColorScheme();
-//   return (
-//     <View
-//       style={
-//         colorScheme === "dark"
-//           ? themes["blue"]["dark"]
-//           : themes["blue"]["light"]
-//       }
-//       className={"flex-1 bg-primary"}
-//     >
-//       {props.children}
-//     </View>
-//   );
-// }
+import Toast from "react-native-toast-message";
 
 function StoreProvider({ children }: { children: React.ReactNode }) {
   const storeRef = React.useRef<AppStore | null>(null);
@@ -59,7 +32,6 @@ function HeroUIProvider({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
-  const colors = getColors(colorScheme === "dark");
   return (
     <HeroUIProvider>
       <StoreProvider>
@@ -69,6 +41,7 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <StatusBar style="auto" />
           </Stack>
+          <Toast />
         </AuthProvider>
       </StoreProvider>
     </HeroUIProvider>

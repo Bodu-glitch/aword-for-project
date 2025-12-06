@@ -1,5 +1,6 @@
 import { createApi, fakeBaseQuery } from "@reduxjs/toolkit/query/react";
 import { supabase } from "@/lib/supabase";
+import showErrorToast from "@/utls/errorToast";
 
 // Generic helpers
 type DbError = { message: string; code?: string };
@@ -150,8 +151,7 @@ export const adminApi = createApi({
             .eq("id", id);
           error = res.error ?? (null as any);
         }
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id, banned } };
       },
       invalidatesTags: [{ type: "Profiles", id: "LIST" }],
@@ -170,8 +170,7 @@ export const adminApi = createApi({
           .select("*")
           .order("created_at", { ascending: false });
 
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: (data ?? []) as RootRow[] };
       },
       providesTags: [{ type: "Roots", id: "LIST" }],
@@ -190,8 +189,7 @@ export const adminApi = createApi({
 
         if (root_id) q = q.eq("root_id", root_id);
         const { data, error } = (await q) as any;
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data ?? [] };
       },
       providesTags: [{ type: "Vocab", id: "LIST" }],
@@ -210,8 +208,7 @@ export const adminApi = createApi({
 
         if (vocab_id) q = q.eq("vocab_id", vocab_id);
         const { data, error } = await q;
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: (data ?? []) as SenseRow[] };
       },
       providesTags: [{ type: "Senses", id: "LIST" }],
@@ -230,8 +227,7 @@ export const adminApi = createApi({
 
         if (vocab_id) q = q.eq("vocab_id", vocab_id);
         const { data, error } = await q;
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: (data ?? []) as ExampleRow[] };
       },
       providesTags: [{ type: "Examples", id: "LIST" }],
@@ -250,8 +246,7 @@ export const adminApi = createApi({
 
         if (vocab_id) q = q.eq("vocab_id", vocab_id);
         const { data, error } = (await q) as any;
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: (data ?? []) as VocabSubRootRow[] };
       },
       providesTags: [{ type: "SubRoots", id: "LIST" }],
@@ -271,8 +266,7 @@ export const adminApi = createApi({
         console.log("[listSubVocab] querying with sub_root_id:", sub_root_id);
         if (sub_root_id) q = q.eq("sub_root_id", sub_root_id);
         const { data, error } = (await q) as any;
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data ?? [] };
       },
       providesTags: [{ type: "SubVocab", id: "LIST" }],
@@ -291,8 +285,7 @@ export const adminApi = createApi({
 
         if (sub_vocab_id) q = q.eq("sub_vocab_id", sub_vocab_id);
         const { data, error } = await q;
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: (data ?? []) as SubVocabSenseRow[] };
       },
       providesTags: [{ type: "SubSenses", id: "LIST" }],
@@ -311,8 +304,7 @@ export const adminApi = createApi({
 
         if (sub_vocab_id) q = q.eq("sub_vocab_id", sub_vocab_id);
         const { data, error } = await q;
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: (data ?? []) as SubVocabExampleRow[] };
       },
       providesTags: [{ type: "SubExamples", id: "LIST" }],
@@ -326,8 +318,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as RootRow };
       },
       invalidatesTags: [{ type: "Roots", id: "LIST" }],
@@ -335,8 +326,7 @@ export const adminApi = createApi({
     deleteRoot: builder.mutation<{ id: string }, { id: string }>({
       async queryFn({ id }) {
         const { error } = await supabase.from("roots").delete().eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       // Deleting a root cascades to vocab and related data; refresh all dependent lists
@@ -359,8 +349,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as VocabRow };
       },
       invalidatesTags: [{ type: "Vocab", id: "LIST" }],
@@ -368,8 +357,7 @@ export const adminApi = createApi({
     deleteVocab: builder.mutation<{ id: string }, { id: string }>({
       async queryFn({ id }) {
         const { error } = await supabase.from("vocab").delete().eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       // Deleting vocab affects vocab, senses, examples and sub-roots/sub-vocabs
@@ -391,8 +379,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as SenseRow };
       },
       invalidatesTags: [{ type: "Senses", id: "LIST" }],
@@ -403,8 +390,7 @@ export const adminApi = createApi({
           .from("vocab_senses")
           .delete()
           .eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       invalidatesTags: [{ type: "Senses", id: "LIST" }],
@@ -417,8 +403,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as ExampleRow };
       },
       invalidatesTags: [{ type: "Examples", id: "LIST" }],
@@ -429,8 +414,7 @@ export const adminApi = createApi({
           .from("vocab_examples")
           .delete()
           .eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       invalidatesTags: [{ type: "Examples", id: "LIST" }],
@@ -446,8 +430,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as VocabSubRootRow };
       },
       invalidatesTags: [{ type: "SubRoots", id: "LIST" }],
@@ -458,8 +441,7 @@ export const adminApi = createApi({
           .from("vocab_sub_roots")
           .delete()
           .eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       // Deleting a vocab_sub_root affects sub-roots and sub-vocab under it
@@ -479,8 +461,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as SubVocabRow };
       },
       invalidatesTags: [{ type: "SubVocab", id: "LIST" }],
@@ -491,8 +472,7 @@ export const adminApi = createApi({
           .from("sub_vocab")
           .delete()
           .eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       // Deleting a sub_vocab impacts sub vocab list and its senses/examples
@@ -513,8 +493,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as SubVocabSenseRow };
       },
       invalidatesTags: [{ type: "SubSenses", id: "LIST" }],
@@ -525,8 +504,7 @@ export const adminApi = createApi({
           .from("sub_vocab_sense")
           .delete()
           .eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       invalidatesTags: [{ type: "SubSenses", id: "LIST" }],
@@ -542,8 +520,7 @@ export const adminApi = createApi({
           .upsert(values)
           .select("*")
           .limit(1);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: data?.[0] as SubVocabExampleRow };
       },
       invalidatesTags: [{ type: "SubExamples", id: "LIST" }],
@@ -554,8 +531,7 @@ export const adminApi = createApi({
           .from("sub_vocab_example")
           .delete()
           .eq("id", id);
-        if (error)
-          return { error: { message: error.message, code: error.code } };
+        if (error) return showErrorToast(error);
         return { data: { id } };
       },
       invalidatesTags: [{ type: "SubExamples", id: "LIST" }],
