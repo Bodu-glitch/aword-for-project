@@ -1,7 +1,5 @@
 import { useGetProfileQuery } from "@/lib/features/profile/profileApi";
-import {
-  useGetTotalLearnedVocabCountQuery
-} from "@/lib/features/vocab/vocabApi";
+import { useGetTotalLearnedVocabCountQuery } from "@/lib/features/vocab/vocabApi";
 import { useAppSelector } from "@/lib/hooks";
 import { supabase } from "@/lib/supabase";
 import { getColors } from "@/utls/colors";
@@ -219,7 +217,7 @@ const Home = () => {
                 Learning
               </Text>
               <Text className="text-lg" style={{ color: colors.text.button }}>
-                lesson #20
+                Continue your learning path.
               </Text>
             </View>
           </View>
@@ -245,7 +243,7 @@ const Home = () => {
                 Flashcard
               </Text>
               <Text className="text-lg" style={{ color: colors.text.button }}>
-                No. of card 30
+                Practice flashcards daily.
               </Text>
             </View>
           </View>
@@ -271,7 +269,7 @@ const Home = () => {
                 Wordex
               </Text>
               <Text className="text-lg" style={{ color: colors.text.button }}>
-                Looking for a word
+                Looking for a word.
               </Text>
             </View>
           </View>
@@ -297,7 +295,7 @@ const Home = () => {
                 Leaderboard
               </Text>
               <Text className="text-lg" style={{ color: colors.text.button }}>
-                Your learning rank
+                See how you rank among others.
               </Text>
             </View>
           </View>

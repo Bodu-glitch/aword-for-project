@@ -15,6 +15,12 @@ const RoutesLayout = () => {
         }}
       />
       <Tabs.Screen
+        name="learning"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           headerShown: false,

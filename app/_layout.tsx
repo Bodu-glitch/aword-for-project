@@ -62,12 +62,12 @@ export default function RootLayout() {
   const colors = getColors(colorScheme === "dark");
   return (
     <HeroUIProvider>
+      <StatusBar style="auto" />
       <StoreProvider>
         <AuthProvider>
           <SplashScreenController />
           <Stack>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <StatusBar style="auto" />
           </Stack>
         </AuthProvider>
       </StoreProvider>

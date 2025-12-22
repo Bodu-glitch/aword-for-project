@@ -2,7 +2,7 @@ import PlayAudioButton from "@/components/PlayAudioButton";
 import { Vocabulary } from "@/models/Vocabulary";
 import {
   fetchRandomVocabularyBatch,
-  fetchVocabularyBatch
+  fetchVocabularyBatch,
 } from "@/supabase/vocabulary";
 import { getColors } from "@/utls/colors";
 import { getPartOfSpeechFull } from "@/utls/get_part_of_speechfull";
@@ -13,11 +13,16 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Platform,
   Pressable,
   Text,
+  TouchableOpacity,
+  StatusBar,
   View,
+  Touchable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Tooltip from "react-native-walkthrough-tooltip";
 
 const { width } = Dimensions.get("window");
 
@@ -171,6 +176,25 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
     })();
   }, []);
 
+  useEffect(() => {
+    if (currentWord) {
+      // 1. Dừng mọi chuyển động
+      flipAnimation.stopAnimation();
+
+      // 2. Reset giá trị về 0 (Mặt trước)
+      flipAnimation.setValue(0);
+
+      // 3. Đảm bảo state React khớp với giao diện
+      setIsFlipped(false);
+      Animated.spring(flipAnimation, {
+        toValue: 0,
+        tension: 10,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [currentWord]);
+
   const flipCard = () => {
     Animated.spring(flipAnimation, {
       toValue: isFlipped ? 0 : 1,
@@ -207,8 +231,9 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
     console.log("handlePrevious - newIndex:", newIndex);
 
     // Reset flip animation to front side
-    flipAnimation.setValue(0);
     setIsFlipped(false);
+
+    flipAnimation.setValue(0);
 
     setCurrentIndex(newIndex);
     setCurrentWord(history[newIndex]);
@@ -219,9 +244,12 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
       return;
     }
 
+    flipAnimation.stopAnimation();
+
+    setIsFlipped(false);
+
     // Reset flip animation to front side
     flipAnimation.setValue(0);
-    setIsFlipped(false);
 
     if (currentIndex < history.length - 1) {
       const newIndex = currentIndex + 1;
@@ -333,309 +361,346 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
         </View>
       </View>
 
-      <Pressable onPress={()=> {
-        console.log('Flashcard pressed');
-        flipCard();
-      }} className={"flex-1"}>
+      <Pressable
+        onPress={() => {
+          console.log("Flashcard pressed");
+          flipCard();
+        }}
+        className={"flex-1"}
+      >
         <View className="flex-1 justify-center items-start px-6 ">
-          
-            <View className="relative w-full flex-1 max-h-[500px] min-h-[400px]">
-              <Animated.View
-                style={[
-                  {
-                    position: "absolute",
-                    backfaceVisibility: "hidden",
-                    width: "100%",
-                  },
-                  frontAnimatedStyle,
-                ]}
+          <View className="relative w-full flex-1 max-h-[500px] min-h-[400px]">
+            <Animated.View
+              pointerEvents={isFlipped ? "none" : "box-none"}
+              style={[
+                {
+                  position: "absolute",
+                  backfaceVisibility: "hidden",
+                  width: "100%",
+                  zIndex: isFlipped ? 1 : 2,
+                },
+                frontAnimatedStyle,
+              ]}
+            >
+              <View
+                key={`front-${currentWord.id}`}
+                className="rounded-2xl shadow-lg justify-center items-center self-center w-full h-full"
+                style={{
+                  padding: 24,
+                  backgroundColor: colors.background.secondary,
+                  shadowColor: colors.text.primary,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  elevation: 4,
+                  borderWidth: 1,
+                  borderColor: colors.accent.blue,
+                }}
               >
-                <View
-                  className="rounded-2xl shadow-lg justify-center items-center self-center w-full h-full"
-                  style={{
-                    padding: 24,
-                    backgroundColor: colors.background.secondary,
-                    shadowColor: colors.text.primary,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 4,
-                    elevation: 4,
-                    borderWidth: 1,
-                    borderColor: colors.accent.blue,
-                  }}
-                >
-                  <Pressable
-                    className="absolute top-4 right-4 z-20"
-                    onPress={toggleStar}
-                    style={{ zIndex: 20 }}
-                  >
-                    <Ionicons
-                      name={
-                        currentWord && starredIds.has(currentWord.id)
-                          ? "star"
-                          : "star-outline"
-                      }
-                      size={22}
-                      color={colors.accent.yellow}
-                    />
-                  </Pressable>
+                {/*<Pressable*/}
+                {/*  className="absolute top-4 right-4 z-20"*/}
+                {/*  onPress={toggleStar}*/}
+                {/*  style={{ zIndex: 20 }}*/}
+                {/*>*/}
+                {/*  <Ionicons*/}
+                {/*    name={*/}
+                {/*      currentWord && starredIds.has(currentWord.id)*/}
+                {/*        ? "star"*/}
+                {/*        : "star-outline"*/}
+                {/*    }*/}
+                {/*    size={22}*/}
+                {/*    color={colors.accent.yellow}*/}
+                {/*  />*/}
+                {/*</Pressable>*/}
+                {(() => {
+                  const parts = [
+                    {
+                      type: "prefix",
+                      word: currentWord.prefix,
+                      meaning: currentWord.prefix_meaning,
+                    },
+                    {
+                      type: "infix",
+                      word: currentWord.infix,
+                      meaning: currentWord.infix_meaning,
+                    },
+                    {
+                      type: "postfix",
+                      word: currentWord.postfix,
+                      meaning: currentWord.postfix_meaning,
+                    },
+                  ].filter((p) => p.word); // Lọc bỏ những phần không có từ (null/undefined/empty)
 
-                  <View
-                    className="flex-row items-center justify-center mb-4"
-                    onLayout={(e) => setHeaderWidth(e.nativeEvent.layout.width)}
-                  >
-                    <Text
-                      className="text-5xl font-bold"
-                      style={{ color: colors.text.primary }}
-                    >
-                      {currentWord.word}
-                    </Text>
-                  </View>
+                  return (
+                    <View className="flex flex-row items-center justify-center border-gray-500 w-full flex-wrap">
+                      {parts.map((part, index) => (
+                        <React.Fragment key={`${currentWord.id}-${part.type}`}>
+                          {/* Render từ */}
+                          <WordTooltip
+                            word={part.word!} // Dấu ! vì ta đã filter ở trên
+                            meaning={part.meaning || "No meaning"}
+                            setHeaderWidth={setHeaderWidth}
+                          />
 
-                  <View
-                    className="h-1"
-                    style={{ width: headerWidth ?? undefined }}
-                  >
-                    <View className="flex-row justify-between">
-                      {[...Array(8)].map((_, i) => (
-                        <View
-                          key={i}
-                          className="w-4 h-1 rounded-full"
-                          style={{ backgroundColor: colors.accent.yellow }}
-                        />
+                          {/* Render dấu chấm NẾU không phải là phần tử cuối cùng */}
+                          {index < parts.length - 1 && (
+                            <Text
+                              className="text-lg mx-2 font-bold"
+                              style={{ color: colors.accent.yellow }} // Hoặc colors.text.secondary tuỳ bạn thích
+                            >
+                              •
+                            </Text>
+                          )}
+                        </React.Fragment>
                       ))}
                     </View>
-                  </View>
-                </View>
-              </Animated.View>
+                  );
+                })()}
+                {/*<View*/}
+                {/*  className="h-1"*/}
+                {/*  style={{ width: headerWidth ?? undefined }}*/}
+                {/*>*/}
+                {/*  <View className="flex-row justify-between">*/}
+                {/*    {[...Array(currentWord.word.length)].map((_, i) => (*/}
+                {/*      <View*/}
+                {/*        key={i}*/}
+                {/*        className="w-4 h-1 rounded-full"*/}
+                {/*        style={{ backgroundColor: colors.accent.yellow }}*/}
+                {/*      />*/}
+                {/*    ))}*/}
+                {/*  </View>*/}
+                {/*</View>*/}
+              </View>
+            </Animated.View>
 
-              {/* Back Side */}
-              <Animated.View
-                style={[
-                  {
-                    position: "absolute",
-                    backfaceVisibility: "hidden",
-                    width: "100%",
-                  },
-                  backAnimatedStyle,
-                ]}
+            {/* Back Side */}
+            <Animated.View
+              style={[
+                {
+                  position: "absolute",
+                  backfaceVisibility: "hidden",
+                  width: "100%",
+                  zIndex: isFlipped ? 2 : 1,
+                },
+                backAnimatedStyle,
+              ]}
+            >
+              <View
+                className="rounded-2xl relative shadow-lg justify-center self-center w-full h-full"
+                style={{
+                  padding: 24,
+                  backgroundColor: colors.background.secondary,
+                  shadowColor: colors.text.primary,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 4,
+                  elevation: 4,
+                  borderWidth: 1,
+                  borderColor: colors.accent.blue,
+                }}
               >
-                <View
-                  className="rounded-2xl shadow-lg justify-center self-center w-full h-full"
-                  style={{
-                    padding: 24,
-                    backgroundColor: colors.background.secondary,
-                    shadowColor: colors.text.primary,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 4,
-                    elevation: 4,
-                    borderWidth: 1,
-                    borderColor: colors.accent.blue,
-                  }}
+                {/* Refresh Button */}
+                <Pressable
+                  className="absolute top-4 right-4 z-20"
+                  onPress={() => loadVocabularyBatch()}
+                  style={{ zIndex: 20 }}
                 >
-                  {/* Refresh Button */}
-                  <Pressable
-                    className="absolute top-4 right-4 z-20"
-                    onPress={() => loadVocabularyBatch()}
-                    style={{ zIndex: 20 }}
-                  >
-                    <Ionicons
-                      name="refresh"
-                      size={20}
-                      color={colors.text.secondary}
-                    />
-                  </Pressable>
+                  <Ionicons
+                    name="refresh"
+                    size={20}
+                    color={colors.text.secondary}
+                  />
+                </Pressable>
 
-                  {/* Word with Syllables and POS */}
-                  <View className="flex-row items-center mb-2">
-                    <View className="flex-row items-center">
-                      {currentWord?.prefix && (
-                        <>
-                          <Text
-                            className="text-lg font-semibold"
-                            style={{ color: colors.accent.red }}
-                          >
-                            {currentWord.prefix}
-                          </Text>
-                          <Text
-                            className="text-sm mx-1"
-                            style={{ color: colors.text.secondary }}
-                          >
-                            •
-                          </Text>
-                        </>
-                      )}
-                      <Text
-                        className="text-lg font-semibold"
-                        style={{ color: colors.text.primary }}
-                      >
-                        {currentWord?.word
-                          ?.replace(currentWord?.prefix || "", "")
-                          .replace(currentWord?.postfix || "", "") || "word"}
-                      </Text>
-                      {currentWord?.postfix && (
-                        <>
-                          <Text
-                            className="text-sm mx-1"
-                            style={{ color: colors.text.secondary }}
-                          >
-                            •
-                          </Text>
-                          <Text
-                            className="text-lg font-semibold"
-                            style={{ color: colors.accent.green }}
-                          >
-                            {currentWord.postfix}
-                          </Text>
-                        </>
-                      )}
-                    </View>
-                    <Text
-                      className="text-sm ml-4 mr-2"
-                      style={{ color: colors.text.secondary }}
-                    >
-                      {getPartOfSpeechFull(currentWord.pos ?? "")}
-                    </Text>
-                    <PlayAudioButton
-                      audioPath={currentWord.audio_path || ""}
-                    ></PlayAudioButton>
-                  </View>
-
-                  {/* Pronunciation */}
-                  <Text
-                    className="text-base mb-3"
-                    style={{ color: colors.text.secondary }}
-                  >
-                    {currentWord.phonetic}
-                  </Text>
-
-                  {/* Translation */}
-                  <Text
-                    className="text-xl font-medium mb-3"
-                    style={{ color: colors.text.primary }}
-                  >
-                    {currentWord.definition_vi}
-                  </Text>
-
-                  {/* Example */}
-                  <Text
-                    className="text-base mb-2"
-                    style={{ color: colors.text.secondary }}
-                  >
-                    {highlightWordInExample(
-                      currentWord.example_en ?? "",
-                      currentWord.word,
-                      colors,
+                {/* Word with Syllables and POS */}
+                <View className="flex-row items-center mb-2">
+                  <View className="flex-row items-center">
+                    {currentWord?.prefix && (
+                      <>
+                        <Text
+                          className="text-lg font-semibold"
+                          style={{ color: colors.accent.red }}
+                        >
+                          {currentWord.prefix}
+                        </Text>
+                        <Text
+                          className="text-sm mx-1"
+                          style={{ color: colors.text.secondary }}
+                        >
+                          •
+                        </Text>
+                      </>
                     )}
-                  </Text>
-
-                  {/* Example Vietnamese */}
-                  {currentWord.example_vi && (
                     <Text
-                      className="text-base mb-6"
-                      style={{ color: colors.text.secondary }}
-                    >
-                      {currentWord.example_vi}
-                    </Text>
-                  )}
-
-                  {/* Anatomy Section */}
-                  <View>
-                    <Text
-                      className="font-bold text-lg mb-3"
+                      className="text-lg font-semibold"
                       style={{ color: colors.text.primary }}
                     >
-                      Anatomy
+                      {currentWord?.word
+                        ?.replace(currentWord?.prefix || "", "")
+                        .replace(currentWord?.postfix || "", "") || "word"}
                     </Text>
-
-                    {/* Prefix */}
-                    {currentWord.prefix && (
-                      <View className="flex-row items-center mb-2">
-                        <View className="flex-row items-center w-40">
-                          <View
-                            className="rounded-l-full px-3 py-1 w-[60px]"
-                            style={{ backgroundColor: colors.accent.red }}
-                          >
-                            <Text className="text-white text-xs font-medium text-center">
-                              Prefix
-                            </Text>
-                          </View>
-                          <Text
-                            className="ml-3 text-base font-semibold"
-                            style={{ color: colors.text.primary }}
-                          >
-                            {currentWord.prefix}-
-                          </Text>
-                        </View>
+                    {currentWord?.postfix && (
+                      <>
                         <Text
-                          className="flex-1 ml-8 text-base text-left"
+                          className="text-sm mx-1"
                           style={{ color: colors.text.secondary }}
                         >
-                          {currentWord.prefix_meaning}
+                          •
                         </Text>
-                      </View>
-                    )}
-
-                    {/* Infix */}
-                    {currentWord.infix && (
-                      <View className="flex-row items-center mb-2">
-                        <View className="flex-row items-center w-40">
-                          <View
-                            className="rounded-l-full px-3 py-1 w-[60px]"
-                            style={{ backgroundColor: colors.accent.purple }}
-                          >
-                            <Text className="text-white text-xs font-medium text-center">
-                              Infix
-                            </Text>
-                          </View>
-                          <Text
-                            className="ml-3 text-base font-semibold"
-                            style={{ color: colors.text.primary }}
-                          >
-                            -{currentWord.infix}-
-                          </Text>
-                        </View>
                         <Text
-                          className="flex-1 ml-8 text-base text-left"
-                          style={{ color: colors.text.secondary }}
+                          className="text-lg font-semibold"
+                          style={{ color: colors.accent.green }}
                         >
-                          {currentWord.infix_meaning}
+                          {currentWord.postfix}
                         </Text>
-                      </View>
-                    )}
-
-                    {/* Postfix */}
-                    {currentWord.postfix && (
-                      <View className="flex-row items-center">
-                        <View className="flex-row items-center w-40">
-                          <View
-                            className="rounded-l-full px-3 py-1 w-[60px]"
-                            style={{ backgroundColor: colors.accent.green }}
-                          >
-                            <Text className="text-white text-xs font-medium text-center">
-                              Postfix
-                            </Text>
-                          </View>
-                          <Text
-                            className="ml-3 text-base font-semibold"
-                            style={{ color: colors.text.primary }}
-                          >
-                            -{currentWord.postfix}
-                          </Text>
-                        </View>
-                        <Text
-                          className="flex-1 ml-8 text-base text-left"
-                          style={{ color: colors.text.secondary }}
-                        >
-                          {currentWord.postfix_meaning}
-                        </Text>
-                      </View>
+                      </>
                     )}
                   </View>
+                  <Text
+                    className="text-sm ml-4 mr-2"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    {getPartOfSpeechFull(currentWord.pos ?? "")}
+                  </Text>
+                  <PlayAudioButton
+                    audioPath={currentWord.audio_path || ""}
+                  ></PlayAudioButton>
                 </View>
-              </Animated.View>
-            </View>
+
+                {/* Pronunciation */}
+                <Text
+                  className="text-base mb-3"
+                  style={{ color: colors.text.secondary }}
+                >
+                  {currentWord.phonetic}
+                </Text>
+
+                {/* Translation */}
+                <Text
+                  className="text-xl font-medium mb-3"
+                  style={{ color: colors.text.primary }}
+                >
+                  {currentWord.definition_vi}
+                </Text>
+
+                {/* Example */}
+                <Text
+                  className="text-base mb-2"
+                  style={{ color: colors.text.secondary }}
+                >
+                  {highlightWordInExample(
+                    currentWord.example_en ?? "",
+                    currentWord.word,
+                    colors,
+                  )}
+                </Text>
+
+                {/* Example Vietnamese */}
+                {currentWord.example_vi && (
+                  <Text
+                    className="text-base mb-6"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    {currentWord.example_vi}
+                  </Text>
+                )}
+
+                {/* Anatomy Section */}
+                <View>
+                  <Text
+                    className="font-bold text-lg mb-3"
+                    style={{ color: colors.text.primary }}
+                  >
+                    Anatomy
+                  </Text>
+
+                  {/* Prefix */}
+                  {currentWord.prefix && (
+                    <View className="flex-row items-center mb-2">
+                      <View className="flex-row items-center w-40">
+                        <View
+                          className="rounded-l-full px-3 py-1 w-[60px]"
+                          style={{ backgroundColor: colors.accent.red }}
+                        >
+                          <Text className="text-white text-xs font-medium text-center">
+                            Prefix
+                          </Text>
+                        </View>
+                        <Text
+                          className="ml-3 text-base font-semibold"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {currentWord.prefix}-
+                        </Text>
+                      </View>
+                      <Text
+                        className="flex-1 ml-8 text-base text-left"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        {currentWord.prefix_meaning}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Infix */}
+                  {currentWord.infix && (
+                    <View className="flex-row items-center mb-2">
+                      <View className="flex-row items-center w-40">
+                        <View
+                          className="rounded-l-full px-3 py-1 w-[60px]"
+                          style={{ backgroundColor: colors.accent.purple }}
+                        >
+                          <Text className="text-white text-xs font-medium text-center">
+                            Infix
+                          </Text>
+                        </View>
+                        <Text
+                          className="ml-3 text-base font-semibold"
+                          style={{ color: colors.text.primary }}
+                        >
+                          -{currentWord.infix}-
+                        </Text>
+                      </View>
+                      <Text
+                        className="flex-1 ml-8 text-base text-left"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        {currentWord.infix_meaning}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Postfix */}
+                  {currentWord.postfix && (
+                    <View className="flex-row items-center">
+                      <View className="flex-row items-center w-40">
+                        <View
+                          className="rounded-l-full px-3 py-1 w-[60px]"
+                          style={{ backgroundColor: colors.accent.green }}
+                        >
+                          <Text className="text-white text-xs font-medium text-center">
+                            Postfix
+                          </Text>
+                        </View>
+                        <Text
+                          className="ml-3 text-base font-semibold"
+                          style={{ color: colors.text.primary }}
+                        >
+                          -{currentWord.postfix}
+                        </Text>
+                      </View>
+                      <Text
+                        className="flex-1 ml-8 text-base text-left"
+                        style={{ color: colors.text.secondary }}
+                      >
+                        {currentWord.postfix_meaning}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </Animated.View>
+          </View>
 
           <View
             className="w-full mt-4 flex-row items-center justify-between z-20"
@@ -719,6 +784,65 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
         </View>
       </Pressable>
     </SafeAreaView>
+  );
+};
+
+const WordTooltip = ({
+  word,
+  meaning,
+  setHeaderWidth,
+}: {
+  word: string;
+  meaning: string;
+  setHeaderWidth: (width: number) => void;
+}) => {
+  const { colorScheme } = useColorScheme();
+  const colors = getColors(colorScheme === "dark");
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <Tooltip
+      isVisible={isVisible}
+      content={
+        <View>
+          <Text> {meaning} </Text>
+        </View>
+      }
+      onClose={() => setIsVisible(false)}
+      backgroundColor={"transparent"}
+      placement="bottom"
+      // below is for the status bar of react navigation bar
+      topAdjustment={
+        Platform.OS === "android" ? -(StatusBar.currentHeight ?? 0) : 0
+      }
+    >
+      <Pressable
+        className=""
+        onLayout={(e: any) => setHeaderWidth(e.nativeEvent.layout.width)}
+        onPress={(event) => {
+          event.preventDefault();
+          setIsVisible(true);
+        }}
+      >
+        <Text
+          className="text-5xl font-bold"
+          style={{ color: colors.text.primary }}
+        >
+          {word}
+        </Text>
+        {/*<View className="h-1" style={{ width: headerWidth ?? undefined }}>*/}
+        {/*  <View className="flex-row ">*/}
+        {/*    {[...Array(word.length)].map((_, i) => (*/}
+        {/*      <View*/}
+        {/*        key={i}*/}
+        {/*        className="w-4 h-1 rounded-full"*/}
+        {/*        style={{ backgroundColor: colors.accent.yellow }}*/}
+        {/*      />*/}
+        {/*    ))}*/}
+        {/*  </View>*/}
+        {/*</View>*/}
+      </Pressable>
+    </Tooltip>
   );
 };
 

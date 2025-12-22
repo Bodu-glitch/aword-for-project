@@ -129,12 +129,6 @@ const LearnLayout = () => {
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="flashcard" options={{ title: "Flashcard" }} />
         <Stack.Screen name="leaderboard" options={{ title: "Leaderboard" }} />
-        <Stack.Screen
-          name="learning"
-          options={{
-            title: "Learn",
-          }}
-        />
       </Stack.Protected>
     </Stack>
   );

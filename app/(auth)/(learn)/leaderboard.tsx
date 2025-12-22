@@ -145,7 +145,9 @@ const ProfileRow = (props: {
         </Avatar>
         <Text
           className="text-lg font-semibold"
-          style={{ color: colors.text.primary }}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={{ color: colors.text.primary, maxWidth: 180, flexShrink: 1 }}
         >
           {name}
         </Text>
@@ -209,7 +211,7 @@ const Top3 = ({
         const size = sizes[displayIdx];
         return (
           <View
-            key={`top-${e.rank}`}
+            key={`top3-${e.profile.email}-${e.rank}`}
             style={{
               width: ITEM_WIDTH,
               alignItems: "center",
