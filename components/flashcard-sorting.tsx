@@ -1,5 +1,4 @@
 import { Vocabulary } from "@/models/Vocabulary";
-import { getTotalVocabularyCount } from "@/supabase/vocabulary";
 import { getColors } from "@/utls/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
@@ -13,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import PlayAudioButton from "@/components/PlayAudioButton";
 
 const getPartOfSpeechFull = (pos: string): string => {
   const posLower = pos.toLowerCase();
@@ -46,7 +46,7 @@ const highlightWordInExample = (example: string, word: string, colors: any) => {
   if (!example || !word) return example;
   const regex = new RegExp(
     `(\\b${word.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\b)`,
-    "gi"
+    "gi",
   );
   const parts = example.split(regex);
   if (parts.length === 1) return example;
@@ -81,10 +81,9 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [knownCount, setKnownCount] = useState<number>(0);
   const [dontKnowCount, setDontKnowCount] = useState<number>(0);
-  const [knownIds, setKnownIds] = useState<Set<string>>(new Set());
+  const [, setKnownIds] = useState<Set<string>>(new Set());
   const [dontKnowIds, setDontKnowIds] = useState<Set<string>>(new Set());
   const [sortingComplete, setSortingComplete] = useState<boolean>(false);
-  const [totalCardsInDB, setTotalCardsInDB] = useState<number>(0);
   const [isShuffled, setIsShuffled] = useState<boolean>(false);
   const [originalHistory, setOriginalHistory] = useState<Vocabulary[]>([]);
   const [headerWidth, setHeaderWidth] = useState<number | null>(null);
@@ -99,13 +98,6 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
     setCurrentWord(seedHistory[0] || null);
     setLoading(false);
   }, [seedHistory]);
-
-  useEffect(() => {
-    (async () => {
-      const total = await getTotalVocabularyCount();
-      setTotalCardsInDB(total);
-    })();
-  }, []);
 
   const flipCard = () => {
     Animated.spring(flipAnimation, {
@@ -180,7 +172,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
       "Shuffle clicked - knownCount:",
       knownCount,
       "dontKnowCount:",
-      dontKnowCount
+      dontKnowCount,
     );
 
     // Check if user has made any choices
@@ -203,7 +195,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
               handleShuffleConfirm();
             },
           },
-        ]
+        ],
       );
       return;
     }
@@ -284,8 +276,8 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
               className="h-2 rounded-full"
               style={{
                 width:
-                  totalCardsInDB > 0
-                    ? `${Math.min(((currentIndex + 1) / totalCardsInDB) * 100, 100)}%`
+                  history.length > 0
+                    ? `${Math.min(((currentIndex + 1) / history.length) * 100, 100)}%`
                     : "0%",
                 backgroundColor: colors.primary.main,
               }}
@@ -315,7 +307,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
                 className="text-lg font-medium"
                 style={{ color: colors.accent.red }}
               >
-                Don't Know
+                Don’t Know
               </Text>
             </View>
 
@@ -406,7 +398,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
                     className="text-xl font-medium"
                     style={{ color: colors.accent.red }}
                   >
-                    Don't Know
+                    Don’t Know
                   </Text>
                   <View
                     className="px-6 py-2 rounded-full"
@@ -485,21 +477,13 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
           </View>
         </View>
       ) : (
-        <View className="flex-1 justify-center items-center px-6">
-          {/* Touch overlay for flipping card */}
-          <Pressable
-            className="absolute inset-0 z-10"
-            onPress={flipCard}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 10,
-            }}
-          />
-
+        <Pressable
+          onPress={() => {
+            console.log("Card pressed - flipping");
+            flipCard();
+          }}
+          className="flex-1 justify-center items-center px-6"
+        >
           <View className="relative w-full flex-1 max-h-[400px] min-h-[300px]">
             <Animated.View
               style={[
@@ -667,13 +651,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
                   >
                     {getPartOfSpeechFull(currentWord?.pos || "")}
                   </Text>
-                  <Pressable className="ml-1 z-20" style={{ zIndex: 20 }}>
-                    <Ionicons
-                      name="volume-high"
-                      size={16}
-                      color={colors.text.secondary}
-                    />
-                  </Pressable>
+                  <PlayAudioButton audioPath={currentWord?.audio_path ?? ""} />
                 </View>
 
                 {/* Pronunciation */}
@@ -681,7 +659,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
                   className="text-base mb-3"
                   style={{ color: colors.text.secondary }}
                 >
-                  {currentWord?.ipa}
+                  {currentWord?.phonetic ?? ""}
                 </Text>
 
                 {/* Translation */}
@@ -700,7 +678,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
                   {highlightWordInExample(
                     currentWord?.example_en || "",
                     currentWord?.word || "",
-                    colors
+                    colors,
                   )}
                 </Text>
 
@@ -884,7 +862,7 @@ const FlashcardSorting = ({ seedHistory, onExitSorting }: Props) => {
               />
             </Pressable>
           </View>
-        </View>
+        </Pressable>
       )}
     </SafeAreaView>
   );

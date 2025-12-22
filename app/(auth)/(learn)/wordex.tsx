@@ -1,26 +1,29 @@
+import { useAppSelector } from "@/lib/hooks";
 import { Vocabulary } from "@/models/Vocabulary";
 import { fetchAllVocabulary, fetchVocabularyList } from "@/supabase/vocabulary";
 import { getColors } from "@/utls/colors";
+import { getPartOfSpeechFull } from "@/utls/get_part_of_speechfull";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useColorScheme } from "nativewind";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   ListRenderItem,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAppSelector } from "@/lib/hooks";
-import { getPartOfSpeechFull } from "@/utls/get_part_of_speechfull";
 
 const SCROLL_DELAY_MS = 250;
 
 const Wordex = () => {
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme === "dark");
+  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string>("");
@@ -354,16 +357,40 @@ const Wordex = () => {
             </View>
           );
         }}
-        ListEmptyComponent={
-          <View className="flex-1 justify-center items-center p-6">
-            <Text
-              className="text-base"
-              style={{ color: colors.text.secondary }}
-            >
-              No vocabulary found.
-            </Text>
-          </View>
-        }
+        ListEmptyComponent={() => {
+          return (
+            <View className="flex-1 justify-center items-center p-6">
+              <Image
+                source={require("../../../assets/images/login-icon.png")}
+                style={{ width: 160, height: 160, marginBottom: 20 }}
+                resizeMode="contain"
+              />
+              <Text
+                className="text-lg font-semibold"
+                style={{ color: colors.text.primary, marginBottom: 6 }}
+              >
+                Chưa có từ vựng
+              </Text>
+              <Text style={{ color: colors.text.secondary, textAlign: "center" }}>
+                Bắt đầu học để thêm từ vựng và luyện tập.
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/learning")}
+                style={{
+                  marginTop: 18,
+                  backgroundColor: colors.primary.main,
+                  paddingHorizontal: 18,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                }}
+              >
+                <Text style={{ color: colors.text.header, fontWeight: "600" }}>
+                  Bắt đầu học
+                </Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
       />
     </SafeAreaView>
   );

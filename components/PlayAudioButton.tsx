@@ -12,7 +12,13 @@ const convertPathToAudioUrl = (path: string) => {
   return data.publicUrl;
 };
 
-const PlayAudioButton = ({ audioPath }: { audioPath: string }) => {
+const PlayAudioButton = ({
+  audioPath,
+  autoPlay = false,
+}: {
+  audioPath: string;
+  autoPlay?: boolean;
+}) => {
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme === "dark");
   const player = useAudioPlayer(convertPathToAudioUrl(audioPath));
@@ -29,9 +35,29 @@ const PlayAudioButton = ({ audioPath }: { audioPath: string }) => {
     player.replace(convertPathToAudioUrl(audioPath));
   }, [audioPath, player]);
 
+  // Auto-play when requested. We delay to next frame so replace() from the
+  // other effect has a chance to run and set the source.
+  useEffect(() => {
+    if (!audioPath || !autoPlay) return;
+    let mounted = true;
+    requestAnimationFrame(async () => {
+      if (!mounted) return;
+      try {
+        await player.seekTo(0);
+        player.play();
+      } catch (e) {
+        // Non-blocking: player may not be ready instantly.
+        console.warn("PlayAudioButton autoPlay failed:", e);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [audioPath, autoPlay, player]);
+
   return (
     <Pressable
-      className="ml-1 relative z-21 bg-red"
+      className="ml-1 relative bg-red"
       style={{ zIndex: 21 }}
       onPress={async (event) => {
         event.preventDefault();

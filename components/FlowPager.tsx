@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useMemo, useRef } from "react";
+import { Animated, View, useWindowDimensions } from "react-native";
 
 type FlowPagerProps = {
   index: number;
@@ -10,7 +10,10 @@ type FlowPagerProps = {
 export default function FlowPager(props: FlowPagerProps) {
   const animationMs = props.animationMs ?? 300;
   const { width } = useWindowDimensions();
-  const pages = useMemo(() => React.Children.toArray(props.children), [props.children]);
+  const pages = useMemo(
+    () => React.Children.toArray(props.children),
+    [props.children],
+  );
   const translateX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -22,24 +25,26 @@ export default function FlowPager(props: FlowPagerProps) {
   }, [props.index, width, animationMs, translateX]);
 
   return (
-    <View style={{ flex: 1, overflow: 'hidden' }}>
+    <View style={{ flex: 1, overflow: "hidden" }}>
       <Animated.View
         style={{
           flex: 1,
-          height: '100%',
-          flexDirection: 'row',
+          height: "100%",
+          flexDirection: "row",
           width: width * pages.length,
           transform: [{ translateX }],
         }}
       >
         {pages.map((child, idx) => (
-          <View key={idx} style={{ width, flex: 1, height: '100%' }}>
-            {child}
+          <View key={idx} style={{ width, flex: 1, height: "100%" }}>
+            {React.isValidElement(child)
+              ? React.cloneElement(child as React.ReactElement<any>, {
+                  isActive: idx === props.index,
+                })
+              : child}
           </View>
         ))}
       </Animated.View>
     </View>
   );
 }
-
-

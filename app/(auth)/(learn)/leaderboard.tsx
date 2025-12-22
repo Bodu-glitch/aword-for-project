@@ -1,10 +1,11 @@
-import React, { useMemo } from "react";
-import { ScrollView, Text, View, Image } from "react-native";
-import { Avatar, Divider } from "heroui-native";
-import { useColorScheme } from "nativewind";
-import { getColors } from "@/utls/colors";
 import { useGetCurrentWeekLeaderboardQuery } from "@/lib/features/leaderboard/leaderboardApi";
 import { supabase } from "@/lib/supabase";
+import { getColors } from "@/utls/colors";
+import { useRouter } from "expo-router";
+import { Avatar, Divider } from "heroui-native";
+import { useColorScheme } from "nativewind";
+import React, { useMemo } from "react";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 const Leaderboard = () => {
   const { colorScheme } = useColorScheme();
@@ -38,6 +39,7 @@ const Leaderboard = () => {
     [entries],
   );
   const topThree = useMemo(() => sorted.slice(0, 3), [sorted]);
+  const isEmpty = !isLoading && sorted.length === 0;
 
   return (
     <View
@@ -45,21 +47,25 @@ const Leaderboard = () => {
       style={{ backgroundColor: colors.background.primary }}
     >
       {/* Header */}
-      <View className="px-5 pt-6 pb-3">
-        <View
-          className="mt-3 self-start px-3 py-1 rounded-full"
-          style={{ backgroundColor: colors.surface.tertiary }}
-        >
-          <Text
-            className="text-xs font-semibold"
-            style={{ color: colors.text.primary }}
-          >
-            This week
-          </Text>
-        </View>
-      </View>
+      {!isEmpty && (
+        <>
+          <View className="px-5 pt-6 pb-3">
+            <View
+              className="mt-3 self-start px-3 py-1 rounded-full"
+              style={{ backgroundColor: colors.surface.tertiary }}
+            >
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: colors.text.primary }}
+              >
+                This week
+              </Text>
+            </View>
+          </View>
 
-      <Divider />
+          <Divider />
+        </>
+      )}
 
       {/* Top 3 */}
       <View className="px-5 py-4">
@@ -83,7 +89,7 @@ const Leaderboard = () => {
         )}
       </View>
 
-      <Divider />
+      {!isEmpty && <Divider />}
 
       {/* List */}
       <ScrollView className="flex-1 pt-2 h-full">
@@ -117,9 +123,7 @@ const Leaderboard = () => {
                 </View>
               ))}
               {sorted.length === 0 && !isLoading && (
-                <Text style={{ color: colors.text.secondary }}>
-                  Learn more to appear on the leaderboard!
-                </Text>
+                <EmptyLeaderboard colors={colors} />
               )}
             </View>
           )}
@@ -145,7 +149,9 @@ const ProfileRow = (props: {
         </Avatar>
         <Text
           className="text-lg font-semibold"
-          style={{ color: colors.text.primary }}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={{ color: colors.text.primary, maxWidth: 180, flexShrink: 1 }}
         >
           {name}
         </Text>
@@ -209,7 +215,7 @@ const Top3 = ({
         const size = sizes[displayIdx];
         return (
           <View
-            key={`top-${e.rank}`}
+            key={`top3-${e.profile.email}-${e.rank}`}
             style={{
               width: ITEM_WIDTH,
               alignItems: "center",
@@ -333,6 +339,48 @@ const ListSkeleton = ({ colors }: { colors: { row: string } }) => {
           />
         </View>
       ))}
+    </View>
+  );
+};
+
+const EmptyLeaderboard = ({
+  colors,
+}: {
+  colors: ReturnType<typeof getColors>;
+}) => {
+  const router = useRouter();
+
+  return (
+    <View className="items-center justify-center py-8">
+      <Image
+        source={require("../../../assets/images/login-icon.png")}
+        style={{ width: 160, height: 160, marginBottom: 20 }}
+        resizeMode="contain"
+      />
+      <Text
+        className="text-lg font-bold"
+        style={{ color: colors.text.primary, marginBottom: 6 }}
+      >
+        Chưa có người dùng nào
+      </Text>
+      <Text style={{ color: colors.text.secondary, textAlign: "center" }}>
+        Tuần mới bắt đầu — hãy học vài bài để xuất hiện trên bảng xếp hạng!
+      </Text>
+
+      <Pressable
+        onPress={() => router.push("/learning")}
+        style={{
+          marginTop: 18,
+          backgroundColor: colors.primary.main,
+          paddingHorizontal: 18,
+          paddingVertical: 10,
+          borderRadius: 10,
+        }}
+      >
+        <Text style={{ color: colors.text.header, fontWeight: "600" }}>
+          Bắt đầu học
+        </Text>
+      </Pressable>
     </View>
   );
 };

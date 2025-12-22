@@ -3,7 +3,10 @@ import NewWord from "@/components/NewWord";
 import NewWordDetail from "@/components/NewWordDetail";
 import QuizFourOptions from "@/components/QuizFourOptions";
 import QuizResult from "@/components/QuizResult";
-import { useGetQuestionsQuery } from "@/lib/features/learn/learnApi";
+import {
+  useGetNewWordQuery,
+  useGetQuestionsQuery,
+} from "@/lib/features/learn/learnApi";
 import { useLazyGetProfileQuery } from "@/lib/features/profile/profileApi";
 import {
   useLazyGetTotalLearnedVocabCountQuery,
@@ -15,6 +18,7 @@ import { router } from "expo-router";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { ActivityIndicator, Text, View } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 
 const Index = () => {
   const { colorScheme } = useColorScheme();
@@ -45,12 +49,30 @@ const Index = () => {
   // Hàng đợi câu hỏi để lặp lại câu sai
   const [questionQueue, setQuestionQueue] = React.useState<number[]>([]);
 
-  const { data: questionsData, isLoading: isGettingQuestions } =
-    useGetQuestionsQuery(undefined, {
+  // When the user presses Continue into the quiz but questions are still
+  // loading, we store the intended step (`pendingStep`) and enable
+  // `isAwaitingQuestions` to show the overlay. When questionsData arrives we
+  // advance to the pending step automatically.
+  const [pendingStep, setPendingStep] = React.useState<number | null>(null);
+  const [isAwaitingQuestions, setIsAwaitingQuestions] = React.useState(false);
+
+  const isFocused = useIsFocused();
+
+  // Only fetch new words when the Learning tab/screen is focused.
+  const { data: newWordsData, isLoading: isGettingNewWords } =
+    useGetNewWordQuery(undefined, {
+      skip: !isFocused,
       refetchOnMountOrArgChange: true,
     });
 
+  // Fetch questions only when we have newWordsData and the screen is focused.
+  const { data: questionsData, isLoading: isGettingQuestions } =
+    useGetQuestionsQuery(newWordsData?.allSenses, {
+      skip: !newWordsData || !isFocused,
+    });
+
   React.useEffect(() => {
+    console.log("questionsData", questionsData);
     if (questionsData?.questions) {
       setSelected(Array(questionsData.questions.length).fill(null));
       setChecked(Array(questionsData.questions.length).fill(false));
@@ -59,6 +81,13 @@ const Index = () => {
       setQuestionStartMs(Date.now());
       // Khởi tạo hàng đợi: 0..n-1
       setQuestionQueue(questionsData.questions.map((_, i) => i));
+      // If we were awaiting questions because the user pressed Continue to
+      // enter the quiz, advance now.
+      if (pendingStep !== null) {
+        setStep(pendingStep);
+        setPendingStep(null);
+        setIsAwaitingQuestions(false);
+      }
     }
   }, [questionsData]);
 
@@ -73,8 +102,35 @@ const Index = () => {
   React.useEffect(() => {
     setQuestionStartMs(Date.now());
   }, [currentQuestionIndex]);
+  React.useEffect(() => {
+    console.log("newWordsData", newWordsData);
+  }, [newWordsData]);
 
-  if (isGettingQuestions || isUpdatingProgress) {
+  const totalWords = newWordsData?.newWords?.length ?? 0;
+  const quizStartIndex = totalWords * 2;
+
+  // If we have new words and questions are still loading, block advancing into
+  // the quiz page and keep the user on the last new-word page while showing the
+  // overlay spinner.
+  const shouldBlockAdvance =
+    totalWords > 0 && isGettingQuestions && !questionsData;
+
+  // Cap displayed index when blocking advance so the pager doesn't show the
+  // quiz page while questions are still loading.
+  const displayedIndex = shouldBlockAdvance
+    ? Math.min(step, quizStartIndex - 1)
+    : step;
+
+  // Show initial loader only when we don't have any data yet or when we've
+  // progressed past the new-word pages and questions are still loading.
+  if (
+    (isGettingNewWords && !newWordsData) ||
+    (!isGettingNewWords &&
+      newWordsData &&
+      newWordsData.newWords.length === 0 &&
+      isGettingQuestions &&
+      !questionsData)
+  ) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -85,7 +141,7 @@ const Index = () => {
     );
   }
 
-  if (!questionsData) {
+  if (!questionsData && !isGettingQuestions) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -98,9 +154,11 @@ const Index = () => {
     );
   }
 
-  const totalWords = questionsData?.newWords?.length ?? 0;
+  const totalWordsCount = newWordsData?.newWords?.length ?? 0;
   const totalQuestions = questionsData?.questions?.length ?? 0;
-  const totalUnits = totalWords + totalQuestions;
+  const totalUnits =
+    totalWordsCount +
+    (isGettingQuestions ? totalWordsCount * 2 : totalQuestions);
   const hasQuestions = totalQuestions > 0;
 
   // Progress helper: 0..1 theo tổng unit (words + mastered questions)
@@ -110,7 +168,7 @@ const Index = () => {
   // Số câu đã master = tổng câu - số còn trong hàng đợi
   const masteredCount = Math.max(0, totalQuestions - questionQueue.length);
   const overallProgress =
-    totalUnits > 0 ? (totalWords + masteredCount) / totalUnits : 0;
+    totalUnits > 0 ? (totalWordsCount + masteredCount) / totalUnits : 0;
 
   // Helper: format seconds as mm:ss
   const formatTime = (secs: number) => {
@@ -124,9 +182,14 @@ const Index = () => {
       className="flex-1"
       style={{ backgroundColor: colors.background.primary }}
     >
-      <FlowPager index={step}>
+      {/* When updating progress, keep the pager mounted to avoid unmounting which
+          causes the pager to jump; show an absolute overlay spinner instead. */}
+      {/* If we're blocking advance into the quiz while questions are loading,
+          cap the displayed index so the pager doesn't show the quiz page even
+          if `step` was set to move forward. */}
+      <FlowPager index={displayedIndex}>
         {/* New words pages */}
-        {questionsData?.newWords?.map((word, idx) => [
+        {newWordsData?.newWords?.map((word, idx) => [
           <NewWord
             key={`newword-${word.id}`}
             word={word.word}
@@ -136,12 +199,15 @@ const Index = () => {
           <NewWordDetail
             key={`newworddetail-${word.id}`}
             progress={getUnitProgress(idx)}
+            // Pass only the actual word parts (prefix/infix/postfix). The
+            // NewWordDetail component will render a single mid-dot between
+            // non-empty parts, so we don't need to inject dot placeholders here.
             wordParts={[
-              { text: word.prefix },
-              { text: "·" },
-              { text: word.infix },
-              { text: "·" },
-              { text: word.postfix },
+              { text: word.prefix && word.prefix !== "" ? word.prefix : null },
+              { text: word.infix && word.infix !== "" ? word.infix : null },
+              {
+                text: word.postfix && word.postfix !== "" ? word.postfix : null,
+              },
             ]}
             pos={word.vocab_senses[0]?.pos || ""}
             ipa={word.phonetic}
@@ -164,7 +230,19 @@ const Index = () => {
                 meaning: word.postfix_meaning,
               },
             ]}
-            onContinue={() => setStep(idx * 2 + 2)}
+            onContinue={() => {
+              const target = idx * 2 + 2;
+              // If advancing would enter the quiz and questions are still
+              // loading, set pendingStep and show overlay only after the user
+              // pressed Continue. We'll advance automatically when
+              // questionsData arrives.
+              if (shouldBlockAdvance && target >= quizStartIndex) {
+                setPendingStep(target);
+                setIsAwaitingQuestions(true);
+                return;
+              }
+              setStep(target);
+            }}
             audioPath={word.audio_path}
           />,
         ])}
@@ -172,7 +250,7 @@ const Index = () => {
         {/* Quiz step: only render if there are questions */}
         {hasQuestions
           ? (() => {
-              const q = questionsData.questions[currentQuestionIndex];
+              const q = questionsData!.questions[currentQuestionIndex];
               const opts = Array.isArray(q.answer_blocks)
                 ? q.answer_blocks
                 : [];
@@ -269,7 +347,9 @@ const Index = () => {
                               try {
                                 const res = await updateProgress({
                                   questionResults,
-                                  allWords: questionsData.allWords,
+                                  allWords: newWordsData
+                                    ? newWordsData.allWords
+                                    : [],
                                 }).unwrap();
                                 const total = questionResults.reduce(
                                   (sum, r) => sum + (r.durationSec || 0),
@@ -293,7 +373,9 @@ const Index = () => {
                               }
                               getProfile();
                               getTotalLearnedVocabCount();
-                              setStep(totalWords * 2 + 1);
+                              // Advance one step forward from the current page so the pager
+                              // performs a normal in-place swipe to the QuizResult page.
+                              setStep((prev) => prev + 1);
                             })();
                           }
                           return newQueue;
@@ -308,7 +390,7 @@ const Index = () => {
                   correctMessage="Chính xác"
                   incorrectMessage={
                     "Đáp án đúng là: " +
-                    (questionsData.questions[currentQuestionIndex]
+                    (questionsData?.questions[currentQuestionIndex]
                       ?.correct_answer ?? "")
                   }
                 />
@@ -330,7 +412,7 @@ const Index = () => {
               icon: "flame-outline",
               color: colors.accent.red,
               text: "Streak",
-              value: `${maxStreak} questions`,
+              value: `${maxStreak} in a row`,
             },
             {
               icon: "flash-outline",
@@ -342,8 +424,42 @@ const Index = () => {
           onContinue={() => router.back()}
         />
       </FlowPager>
+
+      {/* Overlay spinner during update to keep pager state stable */}
+      {(isUpdatingProgress || isAwaitingQuestions) && (
+        <View
+          pointerEvents="auto"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.2)",
+          }}
+        >
+          <ActivityIndicator size="large" color={colors.primary.main} />
+        </View>
+      )}
     </View>
   );
 };
 
-export default Index;
+const LearningScreenWrapper = () => {
+  const isFocused = useIsFocused();
+
+  // Khi người dùng chuyển sang tab khác (Home, Profile...), isFocused = false
+  // Component trả về null -> LearningContent bị hủy (Unmount) -> State chết
+  if (!isFocused) {
+    return null;
+  }
+
+  console.log("isFocus", isFocused);
+  // Khi quay lại tab này, isFocused = true
+  // LearningContent được tạo mới (Mount) -> State chạy lại từ đầu (reset)
+  return <Index />;
+};
+
+export default LearningScreenWrapper;

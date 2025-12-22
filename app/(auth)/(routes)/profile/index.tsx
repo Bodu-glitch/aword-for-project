@@ -222,7 +222,9 @@ const Profile = () => {
                 className="text-xl font-bold mb-1"
                 style={{ color: colors.text.primary }}
               >
-                {isLoadingLastWeek ? "-" : (`Top ${lastWeekData?.rank}` ?? "-")}
+                {isLoadingLastWeek || !lastWeekData || lastWeekData.rank == null
+                  ? "-"
+                  : `Top ${lastWeekData.rank}`}
               </Text>
               <Text
                 className="text-xs"

@@ -6,7 +6,9 @@ import { HeroUINativeProvider } from "heroui-native";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { Provider } from "react-redux";
+import { StatusBar } from "expo-status-bar";
 import "./global.css";
+import { getColors } from "@/utls/colors";
 
 // const themes = {
 //   blue: {
@@ -56,8 +58,11 @@ function HeroUIProvider({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const { colorScheme } = useColorScheme();
+  const colors = getColors(colorScheme === "dark");
   return (
     <HeroUIProvider>
+      <StatusBar style="auto" />
       <StoreProvider>
         <AuthProvider>
           <SplashScreenController />

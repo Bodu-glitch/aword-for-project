@@ -3,13 +3,7 @@ import { getColors } from "@/utls/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import React, { useEffect } from "react";
-import {
-  Animated,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Pressable, ScrollView, Text, View } from "react-native";
 
 type StatItem = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -73,7 +67,7 @@ function AnimatedStatCard({
     >
       <View
         className="rounded-2xl px-4 py-4 items-center"
-        style={{ 
+        style={{
           backgroundColor: colors.surface.secondary,
         }}
       >
@@ -81,10 +75,14 @@ function AnimatedStatCard({
           className="rounded-full p-2.5 mb-2"
           style={{ backgroundColor: color + "20" }}
         >
-          <Ionicons name={icon} size={20} color={color ?? colors.text.primary} />
+          <Ionicons
+            name={icon}
+            size={20}
+            color={color ?? colors.text.primary}
+          />
         </View>
         <Text
-          className="text-lg font-bold mb-1"
+          className="text-lg font-bold mb-1 text-center"
           style={{ color: colors.text.primary }}
         >
           {value}
@@ -117,9 +115,8 @@ function AccuracyDisplay({
 
   const totalQuestions = questionResults.length;
   const correctCount = questionResults.filter((r) => r.isCorrect).length;
-  const accuracy = totalQuestions > 0 
-    ? Math.round((correctCount / totalQuestions) * 100) 
-    : 0;
+  const accuracy =
+    totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
   useEffect(() => {
     Animated.parallel([
@@ -164,28 +161,30 @@ function AccuracyDisplay({
     >
       <View
         className="rounded-3xl px-6 py-8 items-center"
-        style={{ 
+        style={{
           backgroundColor: colors.surface.secondary,
         }}
       >
         <View
           className="rounded-full w-32 h-32 items-center justify-center mb-3"
           style={{
-            backgroundColor: accuracy >= 80 
-              ? colors.accent.green + "20" 
-              : accuracy >= 60 
-              ? colors.accent.yellow + "20"
-              : colors.accent.red + "20",
+            backgroundColor:
+              accuracy >= 80
+                ? colors.accent.green + "20"
+                : accuracy >= 60
+                  ? colors.accent.yellow + "20"
+                  : colors.accent.red + "20",
           }}
         >
           <Text
             className="text-5xl font-bold text-center"
             style={{
-              color: accuracy >= 80 
-                ? colors.accent.green 
-                : accuracy >= 60 
-                ? colors.accent.yellow
-                : colors.accent.red,
+              color:
+                accuracy >= 80
+                  ? colors.accent.green
+                  : accuracy >= 60
+                    ? colors.accent.yellow
+                    : colors.accent.red,
               textAlign: "center",
             }}
           >
@@ -221,9 +220,8 @@ function SummaryCard({
   const totalQuestions = questionResults.length;
   const correctCount = questionResults.filter((r) => r.isCorrect).length;
   const incorrectCount = totalQuestions - correctCount;
-  const accuracy = totalQuestions > 0 
-    ? Math.round((correctCount / totalQuestions) * 100) 
-    : 0;
+  const accuracy =
+    totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
   const correctAnim = React.useRef(new Animated.Value(0)).current;
   const incorrectAnim = React.useRef(new Animated.Value(0)).current;
@@ -292,7 +290,7 @@ function SummaryCard({
     const totalListener = totalAnim.addListener(({ value }) => {
       setDisplayedTotal(Math.round(value));
     });
-    
+
     return () => {
       accuracyAnim.removeListener(accuracyListener);
       correctAnim.removeListener(correctListener);
@@ -310,7 +308,7 @@ function SummaryCard({
     >
       <View
         className="rounded-3xl px-6 py-5"
-        style={{ 
+        style={{
           backgroundColor: colors.surface.secondary,
         }}
       >
@@ -323,10 +321,7 @@ function SummaryCard({
             >
               {displayedCorrect}
             </Text>
-            <Text
-              className="text-xs"
-              style={{ color: colors.text.secondary }}
-            >
+            <Text className="text-xs" style={{ color: colors.text.secondary }}>
               Correct
             </Text>
           </View>
@@ -337,10 +332,7 @@ function SummaryCard({
             >
               {displayedIncorrect}
             </Text>
-            <Text
-              className="text-xs"
-              style={{ color: colors.text.secondary }}
-            >
+            <Text className="text-xs" style={{ color: colors.text.secondary }}>
               Incorrect
             </Text>
           </View>
@@ -351,10 +343,7 @@ function SummaryCard({
             >
               {displayedTotal}
             </Text>
-            <Text
-              className="text-xs"
-              style={{ color: colors.text.secondary }}
-            >
+            <Text className="text-xs" style={{ color: colors.text.secondary }}>
               Total
             </Text>
           </View>
@@ -369,7 +358,7 @@ export default function QuizResult(props: QuizResultProps) {
   const colors = getColors(colorScheme === "dark");
   const title = props.title ?? "Good job!";
   const continueLabel = props.continueLabel ?? "Continue";
-  
+
   const titleFadeAnim = React.useRef(new Animated.Value(0)).current;
   const titleScaleAnim = React.useRef(new Animated.Value(0.5)).current;
 
@@ -395,7 +384,7 @@ export default function QuizResult(props: QuizResultProps) {
       className="flex-1"
       style={{ backgroundColor: colors.background.primary }}
     >
-      <ScrollView 
+      <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -428,8 +417,8 @@ export default function QuizResult(props: QuizResultProps) {
         {/* Accuracy - Prominent Display */}
         {props.questionResults && props.questionResults.length > 0 && (
           <View className="px-5 mb-6">
-            <AccuracyDisplay 
-              questionResults={props.questionResults} 
+            <AccuracyDisplay
+              questionResults={props.questionResults}
               delay={200}
               colors={colors}
             />
@@ -446,7 +435,13 @@ export default function QuizResult(props: QuizResultProps) {
           </Text>
           <View className="flex-row">
             {props.stats.map((s, idx) => (
-              <View key={idx} style={{ flex: 1, marginRight: idx < props.stats.length - 1 ? 8 : 0 }}>
+              <View
+                key={idx}
+                style={{
+                  flex: 1,
+                  marginRight: idx < props.stats.length - 1 ? 8 : 0,
+                }}
+              >
                 <AnimatedStatCard
                   icon={s.icon}
                   color={s.color}
@@ -469,8 +464,8 @@ export default function QuizResult(props: QuizResultProps) {
             >
               Breakdown
             </Text>
-            <SummaryCard 
-              questionResults={props.questionResults} 
+            <SummaryCard
+              questionResults={props.questionResults}
               delay={600}
               colors={colors}
             />
@@ -479,9 +474,9 @@ export default function QuizResult(props: QuizResultProps) {
       </ScrollView>
 
       {/* Continue Button */}
-      <View 
+      <View
         className="absolute bottom-0 left-0 right-0 px-5 pb-8 pt-4"
-        style={{ 
+        style={{
           backgroundColor: colors.background.primary,
         }}
       >

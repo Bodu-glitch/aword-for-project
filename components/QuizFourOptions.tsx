@@ -1,5 +1,6 @@
 import { getColors } from "@/utls/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { useAudioPlayer } from "expo-audio";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
@@ -32,6 +33,10 @@ export default function QuizFourOptions(props: QuizFourOptionsProps) {
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme === "dark");
 
+  // Create two audio players (they auto-release on unmount)
+  const correctPlayer = useAudioPlayer(require("../assets/sounds/right.mp3"));
+  const wrongPlayer = useAudioPlayer(require("../assets/sounds/wrong.mp3"));
+
   const progress = clamp(props.progress);
   const isCheckEnabled =
     props.selectedIndex !== null && props.selectedIndex !== undefined;
@@ -41,6 +46,31 @@ export default function QuizFourOptions(props: QuizFourOptionsProps) {
     props.checked &&
     props.selectedIndex !== null &&
     props.selectedIndex === props.correctIndex;
+
+  // Play the appropriate sound when question becomes checked
+  React.useEffect(() => {
+    if (!props.checked) return;
+
+    (async () => {
+      try {
+        if (isCorrect) {
+          // seek to start if possible then play
+
+          console.log("Playing correct sound");
+          await correctPlayer.seekTo?.(0);
+
+          correctPlayer.play();
+        } else {
+          console.log("Playing wrong sound");
+          await wrongPlayer.seekTo?.(0);
+
+          wrongPlayer.play();
+        }
+      } catch {
+        // ignore errors
+      }
+    })();
+  }, [props.checked, isCorrect, correctPlayer, wrongPlayer]);
 
   return (
     <View
@@ -66,18 +96,18 @@ export default function QuizFourOptions(props: QuizFourOptionsProps) {
       {/* Question Section */}
       <View className="flex-1 items-center pt-4 px-5">
         <View className="w-full items-center">
-          
           {/* Question Prompt with styled container */}
-          <View 
+          <View
             className="w-full px-6 py-4 rounded-3xl"
-            style={{ backgroundColor: colors.surface.secondary }}
+            style={{
+              backgroundColor:
+                colorScheme === "dark" ? "transparent" : colors.surface.secondary,
+            }}
           >
             <Text
               className={`text-3xl font-semibold leading-relaxed ${props.promptColorClass ?? ""}`}
-              style={{ 
-                color: props.promptColorClass 
-                  ? undefined 
-                  : colors.text.primary 
+              style={{
+                color: colors.text.primary,
               }}
             >
               {props.prompt}
