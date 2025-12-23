@@ -19,7 +19,7 @@ import {
   Pressable,
   StatusBar,
   Text,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Tooltip from "react-native-walkthrough-tooltip";
@@ -338,7 +338,7 @@ const FlashcardNormal = ({ onEnterSortingMode }: Props) => {
           <View style={{ flexDirection: "row", gap: 12 }}>
             <Pressable
               onPress={() => {
-                router.push("/learning");
+                router.replace("/learning");
               }}
               className="rounded-2xl items-center justify-center py-4 px-8"
               style={{ backgroundColor: colors.primary.main }}

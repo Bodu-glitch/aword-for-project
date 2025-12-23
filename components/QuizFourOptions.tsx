@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAudioPlayer } from "expo-audio";
 import { useColorScheme } from "nativewind";
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 
 type QuizFourOptionsProps = {
   progress?: number; // 0..1
@@ -20,6 +20,9 @@ type QuizFourOptionsProps = {
   continueLabel?: string; // label after checked
   correctMessage?: string;
   incorrectMessage?: string; // can include correct hint
+  // New optional props to control modal hinting
+  questionType?: "fill_in_blank" | "multiple_choice";
+  questionMeaning?: string; // meaning/hint text; we'll replace !empty -> ___ when shown
 };
 
 function clamp(value?: number) {
@@ -101,7 +104,9 @@ export default function QuizFourOptions(props: QuizFourOptionsProps) {
             className="w-full px-6 py-4 rounded-3xl"
             style={{
               backgroundColor:
-                colorScheme === "dark" ? "transparent" : colors.surface.secondary,
+                colorScheme === "dark"
+                  ? "transparent"
+                  : colors.surface.secondary,
             }}
           >
             <Text
@@ -156,7 +161,7 @@ export default function QuizFourOptions(props: QuizFourOptionsProps) {
         })}
       </View>
 
-      {/* Bottom Action Area */}
+      {/* Bottom Action Area - Check button */}
       {!props.checked ? (
         <View className="px-5 pb-8">
           <Pressable
@@ -183,49 +188,79 @@ export default function QuizFourOptions(props: QuizFourOptionsProps) {
         </View>
       ) : null}
 
+      {/* Result Modal when checked */}
       {props.checked ? (
-        <View className="absolute left-0 right-0 bottom-0">
+        <Modal
+          visible={true}
+          transparent={true}
+          animationType="none"
+          statusBarTranslucent
+        >
           <View
-            className="rounded-t-3xl px-5 pt-6 pb-8"
             style={{
-              backgroundColor: isCorrect
-                ? colors.accent.green
-                : colors.accent.red,
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.25)",
+              justifyContent: "flex-end",
             }}
           >
-            <View className="flex-row items-center mb-4">
-              <Ionicons
-                name={
-                  isCorrect
-                    ? "checkmark-circle-outline"
-                    : "close-circle-outline"
-                }
-                size={24}
-                color={colors.text.inverse}
-              />
-              <Text
-                className="ml-2 text-base font-semibold"
-                style={{ color: colors.text.inverse }}
-              >
-                {isCorrect
-                  ? (props.correctMessage ?? "Chính xác")
-                  : (props.incorrectMessage ?? "Sai")}
-              </Text>
-            </View>
-            <Pressable
-              onPress={props.onCheck}
-              className="rounded-2xl items-center justify-center py-4"
-              style={{ backgroundColor: colors.background.primary }}
+            {/* Bottom sheet container occupying part of the screen */}
+            <View
+              className="rounded-t-3xl px-5 pt-6 pb-8"
+              style={{
+                backgroundColor: isCorrect
+                  ? colors.accent.green
+                  : colors.accent.red,
+              }}
             >
-              <Text
-                className="text-base font-semibold"
-                style={{ color: colors.text.primary }}
+              <View className="flex-row items-center mb-4">
+                <Ionicons
+                  name={
+                    isCorrect
+                      ? "checkmark-circle-outline"
+                      : "close-circle-outline"
+                  }
+                  size={24}
+                  color={colors.text.inverse}
+                />
+                <Text
+                  className="ml-2 text-base font-semibold"
+                  style={{ color: colors.text.inverse }}
+                >
+                  {isCorrect
+                    ? (props.correctMessage ?? "Chính xác")
+                    : (props.incorrectMessage ?? "Sai")}
+                </Text>
+              </View>
+
+              {/* Extra hint: show meaning for wrong fill-in-blank; replace !empty -> ___ */}
+              {!isCorrect &&
+              props.questionType === "fill_in_blank" &&
+              props.questionMeaning ? (
+                <View className="mb-4">
+                  <Text
+                    className="text-base"
+                    style={{ color: colors.text.inverse }}
+                  >
+                    {props.questionMeaning.replace(/!empty/gi, "___")}
+                  </Text>
+                </View>
+              ) : null}
+
+              <Pressable
+                onPress={props.onCheck}
+                className="rounded-2xl items-center justify-center py-4"
+                style={{ backgroundColor: colors.background.primary }}
               >
-                {continueLabel}
-              </Text>
-            </Pressable>
+                <Text
+                  className="text-base font-semibold"
+                  style={{ color: colors.text.primary }}
+                >
+                  {continueLabel}
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </Modal>
       ) : null}
     </View>
   );

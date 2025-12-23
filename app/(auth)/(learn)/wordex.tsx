@@ -371,11 +371,13 @@ const Wordex = () => {
               >
                 Chưa có từ vựng
               </Text>
-              <Text style={{ color: colors.text.secondary, textAlign: "center" }}>
+              <Text
+                style={{ color: colors.text.secondary, textAlign: "center" }}
+              >
                 Bắt đầu học để thêm từ vựng và luyện tập.
               </Text>
               <TouchableOpacity
-                onPress={() => router.push("/learning")}
+                onPress={() => router.replace("/learning")}
                 style={{
                   marginTop: 18,
                   backgroundColor: colors.primary.main,

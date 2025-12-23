@@ -4,12 +4,14 @@ import { useAppDispatch } from "@/lib/hooks";
 import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import { PropsWithChildren, useEffect, useState } from "react";
+import { useGetProfileQuery } from "@/lib/features/profile/profileApi";
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | undefined | null>();
   const [profile, setProfile] = useState<any>();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const dispatch = useAppDispatch();
+  const {} = useGetProfileQuery(undefined, { skip: !session?.user.id });
 
   // Fetch the session once, and subscribe to auth state changes
   useEffect(() => {

@@ -2,16 +2,22 @@ import { supabase } from "@/lib/supabase";
 import React from "react";
 import { Pressable, Text } from "react-native";
 import { useColorScheme } from "nativewind";
+import { profileApi } from "@/lib/features/profile/profileApi";
+import { useDispatch } from "react-redux";
 
-async function onSignOutButtonPress() {
+async function onSignOutButtonPress(dispatch: ReturnType<typeof useDispatch>) {
   const { error } = await supabase.auth.signOut();
 
   if (error) {
     console.error("Error signing out:", error);
   }
+
+  dispatch(profileApi.util.resetApiState());
 }
 
 export default function SignOutButton() {
+  const dispatch = useDispatch();
+
   const { colorScheme } = useColorScheme();
 
   return (
@@ -20,7 +26,7 @@ export default function SignOutButton() {
       style={{
         backgroundColor: colorScheme === "dark" ? "#C73133" : "#C73133",
       }}
-      onPress={onSignOutButtonPress}
+      onPress={() => onSignOutButtonPress(dispatch)}
     >
       <Text
         className="p-4 text-center font-medium"

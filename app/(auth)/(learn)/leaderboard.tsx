@@ -368,7 +368,7 @@ const EmptyLeaderboard = ({
       </Text>
 
       <Pressable
-        onPress={() => router.push("/learning")}
+        onPress={() => router.replace("/learning")}
         style={{
           marginTop: 18,
           backgroundColor: colors.primary.main,

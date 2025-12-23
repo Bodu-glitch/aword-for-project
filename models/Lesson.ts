@@ -35,6 +35,7 @@ interface VocabSense {
 export interface Question {
   question: string;
   answer_blocks: string[];
+  question_vn: string;
   correct_answer: string;
   type: "fill_in_blank" | "multiple_choice";
   vocab_id: string;

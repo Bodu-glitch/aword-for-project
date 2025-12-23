@@ -393,6 +393,9 @@ const Index = () => {
                     (questionsData?.questions[currentQuestionIndex]
                       ?.correct_answer ?? "")
                   }
+                  // New props for bottom-sheet hinting
+                  questionType={q.type}
+                  questionMeaning={q.question_vn}
                 />
               );
             })()
