@@ -242,7 +242,7 @@ const Home = () => {
                   Learning
                 </Text>
                 <Text className="text-lg" style={{ color: colors.text.button }}>
-                  lesson #20
+                  New journey
                 </Text>
               </View>
             </View>
@@ -268,7 +268,7 @@ const Home = () => {
                   Flashcard
                 </Text>
                 <Text className="text-lg" style={{ color: colors.text.button }}>
-                  No. of card 30
+                  Review your flashcards
                 </Text>
               </View>
             </View>

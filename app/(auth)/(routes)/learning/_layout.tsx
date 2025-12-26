@@ -1,7 +1,7 @@
 import { getColors } from "@/utls/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useColorScheme } from "nativewind";
 import React, { useState } from "react";
 import { Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
@@ -11,6 +11,7 @@ const LearningLayout = () => {
   const colors = getColors(colorScheme === "dark");
   const navigation = useNavigation();
   const [showConfirm, setShowConfirm] = useState(false);
+  const router = useRouter();
 
   // Header back component that triggers the bottom modal
   const HeaderBack = ({ isIndex = true }: { isIndex?: boolean }) => (
@@ -19,7 +20,7 @@ const LearningLayout = () => {
         if (isIndex) {
           setShowConfirm(true);
         } else {
-          navigation.goBack?.();
+          router.back();
         }
       }}
       style={{ marginLeft: 12 }}
@@ -63,6 +64,7 @@ const LearningLayout = () => {
             headerStyle: { backgroundColor: colors.primary.main },
             headerTintColor: colors.text.button,
             title: "Word count",
+            headerLeft: () => <HeaderBack isIndex={false} />,
           }}
         />
         <Stack.Screen name="overview" options={{ headerShown: false }} />
