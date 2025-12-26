@@ -1,7 +1,7 @@
 export interface Lesson {
   newWords: Word[];
   allWords: Word[];
-  questions: Question[];
+  allSenses: any;
 }
 
 interface Root {
@@ -10,7 +10,7 @@ interface Root {
   meaning: string;
 }
 
-interface Word {
+export interface Word {
   id: string;
   root_id: string;
   word: string;
@@ -32,9 +32,10 @@ interface VocabSense {
   definition: string;
 }
 
-interface Question {
+export interface Question {
   question: string;
   answer_blocks: string[];
+  question_vn: string;
   correct_answer: string;
   type: "fill_in_blank" | "multiple_choice";
   vocab_id: string;

@@ -397,12 +397,12 @@ export default function QuizResult(props: QuizResultProps) {
               transform: [{ scale: titleScaleAnim }],
             }}
           >
-            <Text
+        <Text
               className="text-4xl font-bold text-center mb-1"
-              style={{ color: colors.text.primary }}
-            >
-              {title}
-            </Text>
+          style={{ color: colors.text.primary }}
+        >
+          {title}
+        </Text>
             {props.questionResults && props.questionResults.length > 0 && (
               <Text
                 className="text-sm text-center"
@@ -450,10 +450,10 @@ export default function QuizResult(props: QuizResultProps) {
                   delay={300 + idx * 100}
                   colors={colors}
                 />
-              </View>
-            ))}
-          </View>
+            </View>
+          ))}
         </View>
+      </View>
 
         {/* Detailed Breakdown */}
         {props.questionResults && props.questionResults.length > 0 && (

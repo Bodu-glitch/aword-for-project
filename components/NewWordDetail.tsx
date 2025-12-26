@@ -1,12 +1,11 @@
 import { getColors } from "@/utls/colors";
-import { Ionicons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { Pressable, Text, View } from "react-native";
 import PlayAudioButton from "@/components/PlayAudioButton";
 
 type WordPart = {
-  text: string;
+  text: string | null;
 };
 
 type AnatomyItem = {
@@ -27,6 +26,8 @@ type NewWordDetailProps = {
   continueLabel?: string;
   onSpeak?: () => void;
   audioPath: string;
+  // FlowPager will inject this so children can know when they are visible
+  isActive?: boolean;
 };
 
 function clamp(value?: number) {
@@ -66,17 +67,42 @@ export default function NewWordDetail(props: NewWordDetailProps) {
 
       {/* Header word line */}
       <View className="px-5 mt-6 flex-row items-center justify-between">
-        <View className="flex-row flex-wrap items-center">
-          {props.wordParts.map((p, idx) => (
-            <Text
-              key={idx}
-              className="text-4xl font-semibold mr-1"
-              style={{ color: colors.text.primary }}
-            >
-              {p.text}
-            </Text>
-          ))}
-          <PlayAudioButton audioPath={props.audioPath}></PlayAudioButton>
+        <View className="flex-row items-center">
+          {/* Render all non-empty parts and place a mid-dot directly between them
+              (no extra spacing). We render them inside a single Text so layout
+              doesn't introduce gaps. */}
+          {(() => {
+            const parts = props.wordParts
+              .map((p) => (p && p.text ? p.text : null))
+              .filter(Boolean) as string[];
+
+            return (
+              <Text
+                className="text-4xl font-semibold"
+                style={{ color: colors.text.primary }}
+              >
+                {parts.length > 0
+                  ? parts.map((t, i) => (
+                      <React.Fragment key={i}>
+                        <Text style={{ color: colors.text.primary }}>{t}</Text>
+                        {i < parts.length - 1 && (
+                          <Text style={{ color: colors.text.secondary }}>
+                            ·
+                          </Text>
+                        )}
+                      </React.Fragment>
+                    ))
+                  : null}
+              </Text>
+            );
+          })()}
+
+          {/* Small gap before the audio button so icon isn't glued to the word */}
+          <View style={{ width: 8 }} />
+          <PlayAudioButton
+            audioPath={props.audioPath}
+            autoPlay={!!props.isActive}
+          />
         </View>
         <Text className="text-xl" style={{ color: colors.text.secondary }}>
           {props.pos}
@@ -117,39 +143,43 @@ export default function NewWordDetail(props: NewWordDetailProps) {
           Anatomy
         </Text>
         <View className="mt-6">
-          {props.anatomy.map((item, idx) => (
-            <View key={idx} className="flex-row items-center mb-4">
-              <View className="flex-row items-center w-40">
-                <View
-                  className="h-10 w-20 items-center justify-center rounded-l-full"
-                  style={{
-                    backgroundColor:
-                      idx === 0
-                        ? colors.accent.red
-                        : idx === 1
-                          ? colors.accent.purple
-                          : colors.accent.green,
-                  }}
-                >
-                  <Text className="text-white font-semibold">
-                    {item.badgeLabel}
+          {props.anatomy.map(
+            (item, idx) =>
+              item.part &&
+              item.meaning && (
+                <View key={idx} className="flex-row items-center mb-4">
+                  <View className="flex-row items-center w-40">
+                    <View
+                      className="h-10 w-20 items-center justify-center rounded-l-full"
+                      style={{
+                        backgroundColor:
+                          idx === 0
+                            ? colors.accent.red
+                            : idx === 1
+                              ? colors.accent.purple
+                              : colors.accent.green,
+                      }}
+                    >
+                      <Text className="text-white font-semibold">
+                        {item.badgeLabel}
+                      </Text>
+                    </View>
+                    <Text
+                      className="ml-3 text-xl font-semibold"
+                      style={{ color: colors.text.primary }}
+                    >
+                      {item.part}
+                    </Text>
+                  </View>
+                  <Text
+                    className="flex-1 ml-16 text-lg text-left"
+                    style={{ color: colors.text.secondary }}
+                  >
+                    {item.meaning}
                   </Text>
                 </View>
-                <Text
-                  className="ml-3 text-xl font-semibold"
-                  style={{ color: colors.text.primary }}
-                >
-                  {item.part}
-                </Text>
-              </View>
-              <Text
-                className="flex-1 ml-16 text-lg text-left"
-                style={{ color: colors.text.secondary }}
-              >
-                {item.meaning}
-              </Text>
-            </View>
-          ))}
+              ),
+          )}
         </View>
       </View>
 

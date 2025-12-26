@@ -36,8 +36,9 @@ function Index() {
 
   useEffect(() => {
     if (isHaveProgressingRoot) {
+      console.log("isHaveProgressingRoot", isHaveProgressingRoot);
       // replace current stack with the learning screen
-      router.replace("/(auth)/(learn)/learning");
+      router.replace("/(auth)/(routes)/learning");
     }
   }, [isHaveProgressingRoot, router]);
 

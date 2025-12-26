@@ -34,12 +34,12 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   return (
     <HeroUIProvider>
+      <StatusBar style="auto" />
       <StoreProvider>
         <AuthProvider>
           <SplashScreenController />
           <Stack>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <StatusBar style="auto" />
           </Stack>
           <Toast />
         </AuthProvider>

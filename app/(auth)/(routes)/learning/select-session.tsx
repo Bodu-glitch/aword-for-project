@@ -12,6 +12,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getColors } from "@/utls/colors";
 import { useColorScheme } from "nativewind";
+import { useNavigation } from "expo-router";
+import { CommonActions } from "@react-navigation/native";
 
 import {
   useAssignWordToRootMutation,
@@ -32,19 +34,42 @@ export default function SelectSession() {
   const [selected, setSelected] = useState<string | null>(null);
   const { colorScheme } = useColorScheme();
   const colors = getColors(colorScheme === "dark");
-  // call = useAssignWordToRootMutation();
   const [assignWordToRoot, { isSuccess }] = useAssignWordToRootMutation();
 
-  // Force refetch and log full result for debugging
   const result = useGetRootByIdQuery(chapter as string);
   const selectedChapter = result.data;
+  const navigation = useNavigation();
 
   React.useEffect(() => {
-    if (isSuccess) {
-      // replace current stack with the learning screen using expo-router
-      router.replace("/(auth)/(learn)/learning");
+    // Chỉ chạy khi thành công và có selected
+    if (isSuccess && selected && selectedChapter) {
+      // 1. Ngắt vòng lặp ngay lập tức để tránh crash app nếu navigation thất bại
+      const currentSelected = selected;
+      setSelected(null);
+
+      // 2. Thực hiện Reset
+      try {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                // TRONG EXPO ROUTER: Thường tên route là tên file (không bao gồm path hay nhóm ())
+                // Hãy thử đổi thành "learning"
+                name: "learning",
+                params: {
+                  rootId: selectedChapter.id,
+                  wordCount: currentSelected,
+                },
+              },
+            ],
+          }),
+        );
+      } catch (error) {
+        console.log("Lỗi navigation:", error);
+      }
     }
-  }, [isSuccess, router]);
+  }, [isSuccess, selected, selectedChapter, navigation]);
 
   async function onConfirm() {
     if (!selected || !selectedChapter) return;

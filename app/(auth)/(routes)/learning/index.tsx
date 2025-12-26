@@ -3,7 +3,10 @@ import NewWord from "@/components/NewWord";
 import NewWordDetail from "@/components/NewWordDetail";
 import QuizFourOptions from "@/components/QuizFourOptions";
 import QuizResult from "@/components/QuizResult";
-import { useGetQuestionsQuery } from "@/lib/features/learn/learnApi";
+import {
+  useGetNewWordQuery,
+  useGetQuestionsQuery,
+} from "@/lib/features/learn/learnApi";
 import { useLazyGetProfileQuery } from "@/lib/features/profile/profileApi";
 import {
   useLazyGetTotalLearnedVocabCountQuery,
@@ -12,10 +15,11 @@ import {
   useSetProgressingRootToFalseMutation,
 } from "@/lib/features/vocab/vocabApi";
 import { getColors } from "@/utls/colors";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import { ActivityIndicator, Text, View } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 
 const Index = () => {
   const { colorScheme } = useColorScheme();
@@ -24,11 +28,9 @@ const Index = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [selected, setSelected] = React.useState<(number | null)[]>([]);
   const [checked, setChecked] = React.useState<boolean[]>([]);
-  // Lưu kết quả cho mỗi lần trả lời (bao gồm thời gian)
   const [questionResults, setQuestionResults] = React.useState<
     QuestionResult[]
   >([]);
-  // Bắt đầu tính thời gian cho câu hiện tại
   const [questionStartMs, setQuestionStartMs] = React.useState<number>(
     Date.now(),
   );
@@ -39,45 +41,81 @@ const Index = () => {
   const [getProfile] = useLazyGetProfileQuery();
   const [getTotalLearnedVocabCount] = useLazyGetTotalLearnedVocabCountQuery();
 
-  // Tổng kết session
   const [expGained, setExpGained] = React.useState(0);
   const [totalTimeSec, setTotalTimeSec] = React.useState(0);
   const [maxStreak, setMaxStreak] = React.useState(0);
 
-  // Hàng đợi câu hỏi để lặp lại câu sai
   const [questionQueue, setQuestionQueue] = React.useState<number[]>([]);
 
-  const { data: questionsData, isLoading: isGettingQuestions } =
-    useGetQuestionsQuery(undefined, {
+  const [pendingStep, setPendingStep] = React.useState<number | null>(null);
+  const [isAwaitingQuestions, setIsAwaitingQuestions] = React.useState(false);
+
+  const params = useLocalSearchParams();
+  const rootId = (params.rootId as string) || (params.chapter as string);
+  const wordCountParam = params.wordCount as string | undefined;
+  const wordCount = wordCountParam ? parseInt(wordCountParam, 10) : undefined;
+
+  const { data: newWordsData, isLoading: isGettingNewWords } =
+    useGetNewWordQuery({ rootId, wordCount } as any, {
       refetchOnMountOrArgChange: true,
     });
 
+  const { data: questionsData, isLoading: isGettingQuestions } =
+    useGetQuestionsQuery(
+      newWordsData?.allSenses ? newWordsData.allSenses : (undefined as any),
+      {
+        skip: !newWordsData?.allSenses,
+      },
+    );
+
   React.useEffect(() => {
+    console.log("questionsData", questionsData);
     if (questionsData?.questions) {
       setSelected(Array(questionsData.questions.length).fill(null));
       setChecked(Array(questionsData.questions.length).fill(false));
       setCurrentQuestionIndex(0);
       setQuestionResults([]);
       setQuestionStartMs(Date.now());
-      // Khởi tạo hàng đợi: 0..n-1
       setQuestionQueue(questionsData.questions.map((_, i) => i));
+      if (pendingStep !== null) {
+        setStep(pendingStep);
+        setPendingStep(null);
+        setIsAwaitingQuestions(false);
+      }
     }
-  }, [questionsData]);
+  }, [questionsData, pendingStep]);
 
-  // Đồng bộ chỉ số câu hiện tại theo phần tử đầu của hàng đợi
   React.useEffect(() => {
     if (questionQueue.length > 0) {
       setCurrentQuestionIndex(questionQueue[0]);
     }
   }, [questionQueue]);
 
-  // Reset timer khi chuyển câu
   React.useEffect(() => {
     setQuestionStartMs(Date.now());
   }, [currentQuestionIndex]);
+  React.useEffect(() => {
+    console.log("newWordsData", newWordsData);
+  }, [newWordsData]);
 
-  // Show initial loader only when we don't have any data yet.
-  if (isGettingQuestions && !questionsData) {
+  const totalWords = newWordsData?.newWords?.length ?? 0;
+  const quizStartIndex = totalWords * 2;
+
+  const shouldBlockAdvance =
+    totalWords > 0 && isGettingQuestions && !questionsData;
+
+  const displayedIndex = shouldBlockAdvance
+    ? Math.min(step, quizStartIndex - 1)
+    : step;
+
+  if (
+    (isGettingNewWords && !newWordsData) ||
+    (!isGettingNewWords &&
+      newWordsData &&
+      newWordsData?.newWords?.length === 0 &&
+      isGettingQuestions &&
+      !questionsData)
+  ) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -88,7 +126,7 @@ const Index = () => {
     );
   }
 
-  if (!questionsData) {
+  if (!questionsData && !isGettingQuestions) {
     return (
       <View
         className="flex-1 justify-center items-center"
@@ -101,21 +139,20 @@ const Index = () => {
     );
   }
 
-  const totalWords = questionsData?.newWords?.length ?? 0;
+  const totalWordsCount = newWordsData?.newWords?.length ?? 0;
   const totalQuestions = questionsData?.questions?.length ?? 0;
-  const totalUnits = totalWords + totalQuestions;
+  const totalUnits =
+    totalWordsCount +
+    (isGettingQuestions ? totalWordsCount * 2 : totalQuestions);
   const hasQuestions = totalQuestions > 0;
 
-  // Progress helper: 0..1 theo tổng unit (words + mastered questions)
   const getUnitProgress = (unitIndex: number) =>
     totalUnits > 0 ? Math.max(0, Math.min(1, (unitIndex + 1) / totalUnits)) : 0;
 
-  // Số câu đã master = tổng câu - số còn trong hàng đợi
   const masteredCount = Math.max(0, totalQuestions - questionQueue.length);
   const overallProgress =
-    totalUnits > 0 ? (totalWords + masteredCount) / totalUnits : 0;
+    totalUnits > 0 ? (totalWordsCount + masteredCount) / totalUnits : 0;
 
-  // Helper: format seconds as mm:ss
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60).toString();
     const s = (secs % 60).toString().padStart(2, "0");
@@ -127,9 +164,8 @@ const Index = () => {
       className="flex-1"
       style={{ backgroundColor: colors.background.primary }}
     >
-      <FlowPager index={step}>
-        {/* New words pages */}
-        {questionsData?.newWords?.map((word, idx) => [
+      <FlowPager index={displayedIndex}>
+        {newWordsData?.newWords?.map((word, idx) => [
           <NewWord
             key={`newword-${word.id}`}
             word={word.word}
@@ -140,11 +176,11 @@ const Index = () => {
             key={`newworddetail-${word.id}`}
             progress={getUnitProgress(idx)}
             wordParts={[
-              { text: word.prefix },
-              { text: "·" },
-              { text: word.infix },
-              { text: "·" },
-              { text: word.postfix },
+              { text: word.prefix && word.prefix !== "" ? word.prefix : null },
+              { text: word.infix && word.infix !== "" ? word.infix : null },
+              {
+                text: word.postfix && word.postfix !== "" ? word.postfix : null,
+              },
             ]}
             pos={word.vocab_senses[0]?.pos || ""}
             ipa={word.phonetic}
@@ -167,22 +203,28 @@ const Index = () => {
                 meaning: word.postfix_meaning,
               },
             ]}
-            onContinue={() => setStep(idx * 2 + 2)}
+            onContinue={() => {
+              const target = idx * 2 + 2;
+              if (shouldBlockAdvance && target >= quizStartIndex) {
+                setPendingStep(target);
+                setIsAwaitingQuestions(true);
+                return;
+              }
+              setStep(target);
+            }}
             audioPath={word.audio_path}
           />,
         ])}
 
-        {/* Quiz step: only render if there are questions */}
         {hasQuestions
           ? (() => {
-              const q = questionsData.questions[currentQuestionIndex];
+              const q = questionsData!.questions[currentQuestionIndex];
               const opts = Array.isArray(q.answer_blocks)
                 ? q.answer_blocks
                 : [];
               const correctIndex = opts.findIndex(
-                (opt) => opt === q.correct_answer,
+                (opt: any) => opt === q.correct_answer,
               );
-              // Replace !empty with a visual blank indicator
               const formattedQuestion = q.question.replace(/!empty/gi, "___");
 
               return (
@@ -240,7 +282,6 @@ const Index = () => {
 
                       setQuestionResults((prev) => [...prev, newResult]);
                     } else {
-                      // Continue -> cập nhật hàng đợi
                       const userAnswerIndex = selected[currentQuestionIndex];
                       const userAnswer =
                         userAnswerIndex !== null &&
@@ -253,7 +294,6 @@ const Index = () => {
                         if (prev.length === 0) return prev;
                         const [head, ...rest] = prev;
 
-                        // Clear trạng thái cho lần lặp lại
                         setChecked((c) => {
                           const cp = [...c];
                           cp[head] = false;
@@ -272,7 +312,9 @@ const Index = () => {
                               try {
                                 const res = await updateProgress({
                                   questionResults,
-                                  allWords: questionsData.allWords,
+                                  allWords: newWordsData
+                                    ? newWordsData.allWords
+                                    : [],
                                 }).unwrap();
                                 const total = questionResults.reduce(
                                   (sum, r) => sum + (r.durationSec || 0),
@@ -302,7 +344,6 @@ const Index = () => {
                           }
                           return newQueue;
                         }
-                        // Trả lời sai -> đẩy xuống cuối
                         return [...rest, head];
                       });
                     }
@@ -312,15 +353,16 @@ const Index = () => {
                   correctMessage="Chính xác"
                   incorrectMessage={
                     "Đáp án đúng là: " +
-                    (questionsData.questions[currentQuestionIndex]
+                    (questionsData?.questions[currentQuestionIndex]
                       ?.correct_answer ?? "")
                   }
+                  questionType={q.type}
+                  questionMeaning={q.question_vn}
                 />
               );
             })()
           : null}
 
-        {/* Result step */}
         <QuizResult
           questionResults={questionResults}
           stats={[
@@ -347,8 +389,7 @@ const Index = () => {
         />
       </FlowPager>
 
-      {/* Overlay spinner during update to keep pager state stable */}
-      {isUpdatingProgress && (
+      {(isUpdatingProgress || isAwaitingQuestions) && (
         <View
           pointerEvents="auto"
           style={{
@@ -369,4 +410,15 @@ const Index = () => {
   );
 };
 
-export default Index;
+const LearningScreenWrapper = () => {
+  const isFocused = useIsFocused();
+
+  if (!isFocused) {
+    return null;
+  }
+
+  console.log("isFocus", isFocused);
+  return <Index />;
+};
+
+export default LearningScreenWrapper;
