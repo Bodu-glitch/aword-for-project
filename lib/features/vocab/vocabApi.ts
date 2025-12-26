@@ -40,7 +40,7 @@ function computeSessionDelta(accuracy: number, avgTimeSec: number): number {
 // compute streak function
 async function updateUserStreak(profileId: string) {
   console.log("Updating streak for user", profileId);
-  const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+  const today = new Date().toLocaleDateString("en-CA"); // yyyy-mm-dd
   console.log("Today's date:", today);
 
   // Lấy streak hiện tại
